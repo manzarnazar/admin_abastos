@@ -8878,4 +8878,6 @@ Smartly or Earn. ',
   'product_recommended_status_updated' => 'Product recommended status updated',
   'The address type field is required.' => 'The address type field is required.',
   'You Must Enter Note Or Reason' => 'You Must Enter Note Or Reason',
+  'example' => 'Example',
+  'Abastos' => 'Abastos',
 );
