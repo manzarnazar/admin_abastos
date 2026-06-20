@@ -63,6 +63,8 @@ ZoneMapDrawingInstance.prototype._createToolbar = function () {
         return;
     }
 
+    mapWarper.style.position = "relative";
+
     let toolbar = mapWarper.querySelector(".zone-map-toolbar");
     if (!toolbar) {
         toolbar = document.createElement("div");
@@ -70,8 +72,18 @@ ZoneMapDrawingInstance.prototype._createToolbar = function () {
         mapWarper.insertBefore(toolbar, mapElement);
     }
 
+    toolbar.style.cssText =
+        "position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:10;" +
+        "display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:4px;" +
+        "max-width:calc(100% - 24px);background:#fff;border-radius:6px;" +
+        "box-shadow:0 2px 6px rgba(0,0,0,0.25);padding:3px 5px;pointer-events:auto;";
+
     searchInput.classList.add("zone-map-search");
     toolbar.appendChild(searchInput);
+    searchInput.style.cssText =
+        "display:block;position:static;height:26px;min-height:26px;width:200px;min-width:140px;" +
+        "max-width:100%;margin:0;padding:2px 8px;font-size:12px;line-height:1.2;" +
+        "border:1px solid #d0d7de;border-radius:4px;flex:1 1 200px;background:#fff;box-shadow:none;";
 
     const controls = document.createElement("div");
     controls.className = "zone-map-drawing-controls";
@@ -113,6 +125,10 @@ ZoneMapDrawingInstance.prototype._makeControlButton = function (title, iconClass
     button.title = title;
     button.className = "zone-map-tool-btn";
     button.innerHTML = '<i class="' + iconClass + '"></i>';
+    button.style.cssText =
+        "width:26px;height:26px;min-width:26px;border:0;border-radius:4px;padding:0;" +
+        "background:#fff;color:#333;cursor:pointer;display:inline-flex;" +
+        "align-items:center;justify-content:center;font-size:14px;flex-shrink:0;";
     button.addEventListener("click", onClick);
     return button;
 };

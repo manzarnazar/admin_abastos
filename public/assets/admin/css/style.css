@@ -680,11 +680,8 @@ a[class*="btn--"]:hover {
     overflow: hidden;
 }
 
-.map-warper #pac-input {
-    display: none;
-    height: 3em;
-    width: -moz-fit-content;
-    width: fit-content;
+.map-warper #pac-input:not(.zone-map-search) {
+    display: none !important;
 }
 
 .zone-map-toolbar {
@@ -692,31 +689,40 @@ a[class*="btn--"]:hover {
     top: 10px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 5;
+    z-index: 10;
     display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     max-width: calc(100% - 24px);
     background: #fff;
     border-radius: 6px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-    padding: 4px 6px;
+    padding: 3px 5px;
+    pointer-events: auto;
 }
 
 .map-warper .zone-map-toolbar #pac-input,
 .map-warper .zone-map-toolbar .zone-map-search {
     display: block !important;
-    position: static;
-    top: auto;
-    left: auto;
-    transform: none;
-    height: 32px;
-    width: 220px;
-    min-width: 160px;
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    height: 26px !important;
+    width: 200px;
+    min-width: 140px;
     max-width: 100%;
     margin: 0;
-    flex: 1 1 220px;
+    padding: 2px 8px;
+    font-size: 12px;
+    line-height: 1.2;
+    border: 1px solid #d0d7de;
+    border-radius: 4px;
+    flex: 1 1 200px;
     background: #fff;
+    box-shadow: none;
 }
 
 .zone-map-drawing-controls {
@@ -736,8 +742,8 @@ a[class*="btn--"]:hover {
 }
 
 .zone-map-tool-btn {
-    width: 30px;
-    height: 30px;
+    width: 26px;
+    height: 26px;
     border: 0;
     border-radius: 4px;
     background: #fff;
@@ -746,7 +752,9 @@ a[class*="btn--"]:hover {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
+    font-size: 14px;
+    padding: 0;
+    flex-shrink: 0;
 }
 
 .zone-map-tool-btn:hover,
@@ -784,9 +792,9 @@ a[class*="btn--"]:hover {
     }
 
     .zone-map-tool-btn {
-        width: 28px;
-        height: 28px;
-        font-size: 14px;
+        width: 24px;
+        height: 24px;
+        font-size: 13px;
     }
 }
 
@@ -17134,4 +17142,40 @@ img{
 
 .spartan_customize_style .spartan_item_wrapper .file_upload{
     overflow: visible !important;
+}
+
+/* Zone map toolbar overlay — keep last for cascade priority */
+.map-warper.map-controler,
+.map-warper {
+    position: relative !important;
+}
+
+.map-warper .zone-map-toolbar {
+    position: absolute !important;
+    top: 10px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 10 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+}
+
+.map-warper .zone-map-toolbar #pac-input,
+.map-warper .zone-map-toolbar .zone-map-search {
+    height: 26px !important;
+    min-height: 26px !important;
+    padding: 2px 8px !important;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+    box-shadow: none !important;
+}
+
+.map-warper .zone-map-tool-btn {
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    border: 0 !important;
+    padding: 0 !important;
 }
