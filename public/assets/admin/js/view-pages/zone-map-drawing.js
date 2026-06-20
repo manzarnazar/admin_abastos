@@ -73,9 +73,9 @@ ZoneMapDrawingInstance.prototype._createToolbar = function () {
     }
 
     toolbar.style.cssText =
-        "position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:10;" +
+        "position:absolute;top:10px;left:10px;right:auto;transform:none;z-index:10;" +
         "display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:4px;" +
-        "max-width:calc(100% - 24px);background:#fff;border-radius:6px;" +
+        "max-width:calc(100% - 62px);width:max-content;background:#fff;border-radius:6px;" +
         "box-shadow:0 2px 6px rgba(0,0,0,0.25);padding:3px 5px;pointer-events:auto;";
 
     searchInput.classList.add("zone-map-search");
