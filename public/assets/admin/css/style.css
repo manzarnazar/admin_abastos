@@ -686,8 +686,8 @@ a[class*="btn--"]:hover {
 
 .zone-map-toolbar {
     position: absolute;
-    top: var(--zone-map-toolbar-top, 10px);
-    left: var(--zone-map-toolbar-left, 128px);
+    top: 10px;
+    left: 10px;
     right: auto;
     transform: none;
     z-index: 10;
@@ -696,7 +696,7 @@ a[class*="btn--"]:hover {
     flex-wrap: nowrap;
     align-items: center;
     gap: 4px;
-    max-width: var(--zone-map-toolbar-max-width, calc(100% - 190px));
+    max-width: calc(100% - 62px);
     width: max-content;
     background: #fff;
     border-radius: 6px;
@@ -781,7 +781,8 @@ a[class*="btn--"]:hover {
 
 @media screen and (max-width: 575px) {
     .zone-map-toolbar {
-        max-width: var(--zone-map-toolbar-max-width, calc(100% - 56px));
+        left: 8px;
+        max-width: calc(100% - 56px);
         padding: 4px;
         gap: 4px;
     }
@@ -17154,11 +17155,11 @@ img{
 
 .map-warper .zone-map-toolbar {
     position: absolute !important;
-    top: var(--zone-map-toolbar-top, 10px) !important;
-    left: var(--zone-map-toolbar-left, 128px) !important;
+    top: 10px !important;
+    left: 10px !important;
     right: auto !important;
     transform: none !important;
-    max-width: var(--zone-map-toolbar-max-width, calc(100% - 190px)) !important;
+    max-width: calc(100% - 62px) !important;
     width: max-content !important;
     z-index: 10 !important;
     display: flex !important;
