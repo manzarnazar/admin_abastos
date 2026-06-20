@@ -656,6 +656,7 @@ a[class*="btn--"]:hover {
     }
 }
 .map-warper {
+    position: relative;
     height: 233px;
     overflow: hidden;
 }
@@ -680,9 +681,113 @@ a[class*="btn--"]:hover {
 }
 
 .map-warper #pac-input {
+    display: none;
     height: 3em;
     width: -moz-fit-content;
     width: fit-content;
+}
+
+.zone-map-toolbar {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    max-width: calc(100% - 24px);
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    padding: 4px 6px;
+}
+
+.map-warper .zone-map-toolbar #pac-input,
+.map-warper .zone-map-toolbar .zone-map-search {
+    display: block !important;
+    position: static;
+    top: auto;
+    left: auto;
+    transform: none;
+    height: 32px;
+    width: 220px;
+    min-width: 160px;
+    max-width: 100%;
+    margin: 0;
+    flex: 1 1 220px;
+    background: #fff;
+}
+
+.zone-map-drawing-controls {
+    display: flex;
+    gap: 3px;
+    margin: 0;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.zone-map-toolbar .zone-map-drawing-controls {
+    border-inline-start: 1px solid #e7eaf3;
+    padding-inline-start: 6px;
+}
+
+.zone-map-tool-btn {
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 4px;
+    background: #fff;
+    color: #333;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+}
+
+.zone-map-tool-btn:hover,
+.zone-map-tool-btn.active {
+    background: var(--primary-clr, #0177cd);
+    color: #fff;
+}
+
+.zone-map-finish-btn {
+    display: none;
+    border: 0;
+    border-radius: 4px;
+    background: var(--primary-clr, #0177cd);
+    color: #fff;
+    padding: 5px 10px;
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+@media screen and (max-width: 575px) {
+    .zone-map-toolbar {
+        width: calc(100% - 16px);
+        padding: 4px;
+        gap: 4px;
+    }
+
+    .map-warper .zone-map-toolbar #pac-input,
+    .map-warper .zone-map-toolbar .zone-map-search {
+        width: auto;
+        min-width: 120px;
+        flex: 1 1 auto;
+    }
+
+    .zone-map-tool-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
+    }
 }
 
 .card .card-header h5 {
