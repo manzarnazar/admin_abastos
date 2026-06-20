@@ -28,6 +28,7 @@ function ZoneMapDrawingInstance(options) {
     this._initMap();
     this._createToolbar();
     this._initSearch();
+    this._bindToolbarPositioning();
 
     if (this.initialPaths && this.initialPaths.length) {
         this._drawFinalPolygon(this.initialPaths, true);
@@ -51,6 +52,11 @@ ZoneMapDrawingInstance.prototype._initMap = function () {
         zoom: 13,
         center: this.defaultCenter,
         mapTypeId: google.maps.MapTypeId.ROADMAP,
+        mapTypeControl: true,
+        mapTypeControlOptions: {
+            style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+            position: google.maps.ControlPosition.TOP_LEFT,
+        },
     });
 };
 
@@ -73,9 +79,9 @@ ZoneMapDrawingInstance.prototype._createToolbar = function () {
     }
 
     toolbar.style.cssText =
-        "position:absolute;top:10px;left:10px;right:auto;transform:none;z-index:10;" +
+        "position:absolute;transform:none;z-index:10;" +
         "display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:4px;" +
-        "max-width:calc(100% - 62px);width:max-content;background:#fff;border-radius:6px;" +
+        "width:max-content;background:#fff;border-radius:6px;" +
         "box-shadow:0 2px 6px rgba(0,0,0,0.25);padding:3px 5px;pointer-events:auto;";
 
     searchInput.classList.add("zone-map-search");
@@ -117,6 +123,70 @@ ZoneMapDrawingInstance.prototype._createToolbar = function () {
     toolbar.appendChild(this.finishButton);
 
     this.toolbar = toolbar;
+    this.mapWarper = mapWarper;
+};
+
+ZoneMapDrawingInstance.prototype._findMapTypeControl = function () {
+    const mapElement = document.getElementById(this.mapElementId);
+    if (!mapElement) {
+        return null;
+    }
+
+    return (
+        mapElement.querySelector(".gm-style-mtc") ||
+        mapElement.querySelector(".gm-style-mtc-bbw") ||
+        mapElement.querySelector('[role="menubar"]') ||
+        null
+    );
+};
+
+ZoneMapDrawingInstance.prototype._positionToolbar = function () {
+    const toolbar = this.toolbar;
+    const mapWarper = this.mapWarper;
+    if (!toolbar || !mapWarper) {
+        return;
+    }
+
+    const gap = 8;
+    const rightReserve = 52;
+    const warperRect = mapWarper.getBoundingClientRect();
+    const mapTypeEl = this._findMapTypeControl();
+    let top = 10;
+    let left = 128;
+    let maxWidth = warperRect.width - left - rightReserve;
+
+    if (mapTypeEl) {
+        const typeRect = mapTypeEl.getBoundingClientRect();
+        const toolbarHeight = toolbar.offsetHeight || 32;
+        top = typeRect.top - warperRect.top + (typeRect.height - toolbarHeight) / 2;
+        left = typeRect.right - warperRect.left + gap;
+        maxWidth = warperRect.width - left - rightReserve;
+    }
+
+    mapWarper.style.setProperty("--zone-map-toolbar-top", Math.max(0, Math.round(top)) + "px");
+    mapWarper.style.setProperty("--zone-map-toolbar-left", Math.max(0, Math.round(left)) + "px");
+    mapWarper.style.setProperty(
+        "--zone-map-toolbar-max-width",
+        Math.max(160, Math.round(maxWidth)) + "px"
+    );
+};
+
+ZoneMapDrawingInstance.prototype._bindToolbarPositioning = function () {
+    const self = this;
+    const reposition = function () {
+        self._positionToolbar();
+    };
+
+    google.maps.event.addListenerOnce(this.map, "idle", reposition);
+    google.maps.event.addListener(this.map, "tilesloaded", reposition);
+
+    if (!this._toolbarResizeHandler) {
+        this._toolbarResizeHandler = reposition;
+        window.addEventListener("resize", this._toolbarResizeHandler);
+    }
+
+    setTimeout(reposition, 100);
+    setTimeout(reposition, 500);
 };
 
 ZoneMapDrawingInstance.prototype._makeControlButton = function (title, iconClass, onClick) {
