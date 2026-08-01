@@ -495,9 +495,13 @@
                                     <div class="col-md-8 col-xxl-9">
                                         <div class="bg--secondary rounded p-20 h-100">
                                             <div class="form-group">
-                                                <label class="input-label mb-2 d-block title-clr fw-normal" for="exampleFormControlInput1">{{translate('CURP/RFC (SITUACION FISCAL)')}} </label>
-                                                <input type="text" name="tin" placeholder="{{translate('Enter CURP or RFC')}}" class="form-control"
+                                                <label class="input-label mb-2 d-block title-clr fw-normal" for="exampleFormControlInput1">{{translate('Taxpayer Identification Number(TIN)')}} </label>
+                                                <input type="text" name="tin" placeholder="{{translate('Type Your Taxpayer Identification Number(TIN)')}}" class="form-control"
                                                        value="{{$store->tin}}"  >
+                                            </div>
+                                            <div class="form-group mb-0">
+                                                <label class="input-label mb-2 d-block title-clr fw-normal" for="exampleFormControlInput1">{{translate('Expire Date')}} </label>
+                                                <input type="date" name="tin_expire_date" class="form-control" value="{{$store->tin_expire_date}}" >
                                             </div>
                                         </div>
                                     </div>
@@ -505,7 +509,7 @@
                                         <div class="bg--secondary rounded p-20 h-100 single-document-uploaderwrap">
                                             <div class="d-flex align-items-center gap-1 justify-content-between mb-20">
                                                 <div>
-                                                    <h4 class="mb-1 fz--14px">{{translate('CURP/RFC Certificate (Situación Fiscal)')}}</h4>
+                                                    <h4 class="mb-1 fz--14px">{{translate('TIN Certificate')}}</h4>
                                                     <p class="fz-12px mb-0">{{translate('pdf, doc, jpg. File size : max 2 MB')}}</p>
                                                 </div>
                                                 <div class="d-flex gap-3 align-items-center">
@@ -556,20 +560,6 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="bg--secondary rounded p-20 single-document-uploaderwrap">
-                                            <div class="d-flex align-items-center gap-1 justify-content-between mb-20">
-                                                <div>
-                                                    <h4 class="mb-1 fz--14px">{{translate('COFEPRIS Document (Health Regulatory Permission)')}}</h4>
-                                                    <p class="fz-12px mb-0">{{translate('pdf, doc, jpg. File size : max 2 MB')}}</p>
-                                                </div>
-                                            </div>
-                                            <input type="file" name="cofepris_document_image" class="form-control document_input" accept=".doc, .pdf, .jpg, .png, .jpeg">
-                                            @if($store->cofepris_document_image ?? null)
-                                                <a href="{{ $store->cofepris_document_image_full_url }}" target="_blank" class="mt-2 d-inline-block">{{ translate('View current file') }}</a>
-                                            @endif
                                         </div>
                                     </div>
                                 </div>

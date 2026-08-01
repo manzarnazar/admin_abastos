@@ -1087,7 +1087,6 @@ class ProviderController extends Controller
     private function createStore(Request $request, Vendor $vendor): mixed
     {
         $extension = $request->has('tin_certificate_image') ? $request->file('tin_certificate_image')->getClientOriginalExtension() : 'png';
-        $cofeprisExtension = $request->has('cofepris_document_image') ? $request->file('cofepris_document_image')->getClientOriginalExtension() : 'png';
         return $this->store->create([
             'name' => $request->name[array_search('default', $request->lang)],
             'phone' => $request->phone,
@@ -1102,8 +1101,8 @@ class ProviderController extends Controller
             'module_id' => config('module')['current_module_id'],
             'pickup_zone_id' => json_encode($request->pickup_zones ?? []),
             'tin' => $request->tin,
+            'tin_expire_date' => $request->tin_expire_date,
             'tin_certificate_image' => Helpers::upload('store/', $extension, $request->file('tin_certificate_image')),
-            'cofepris_document_image' => $request->has('cofepris_document_image') ? Helpers::upload('store/', $cofeprisExtension, $request->file('cofepris_document_image')) : null,
             'delivery_time' => "{$request->minimum_delivery_time}-{$request->maximum_delivery_time} {$request->delivery_time_type}",
             'status' => 1,
             'store_business_model' => 'none',
@@ -1118,7 +1117,6 @@ class ProviderController extends Controller
     private function updateStore(Request $request, Store $store): mixed
     {
         $extension = $request->has('tin_certificate_image') ? $request->file('tin_certificate_image')->getClientOriginalExtension() : 'png';
-        $cofeprisExtension = $request->has('cofepris_document_image') ? $request->file('cofepris_document_image')->getClientOriginalExtension() : 'png';
         return $store->update([
             'name' => $request->name[array_search('default', $request->lang)],
             'phone' => $request->phone,
@@ -1132,8 +1130,8 @@ class ProviderController extends Controller
             'module_id' => config('module')['current_module_id'],
             'pickup_zone_id' => json_encode($request->pickup_zones ?? []),
             'tin' => $request->tin,
+            'tin_expire_date' => $request->tin_expire_date,
             'tin_certificate_image' => $request->has('tin_certificate_image') ? Helpers::update('store/', $store->tin_certificate_image, $extension, $request->file('tin_certificate_image')) : $store->tin_certificate_image,
-            'cofepris_document_image' => $request->has('cofepris_document_image') ? Helpers::update('store/', $store->cofepris_document_image ?? '', $cofeprisExtension, $request->file('cofepris_document_image')) : $store->cofepris_document_image,
             'delivery_time' => "{$request->minimum_delivery_time}-{$request->maximum_delivery_time} {$request->delivery_time_type}",
             'status' => 1,
             'store_business_model' => 'none',

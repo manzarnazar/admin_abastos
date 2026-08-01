@@ -366,7 +366,7 @@
                         <div class="card h-100">
                             <div class="card-header">
                                 <h5 class="card-title m-0 d-flex align-items-center">
-                                    <span class="ml-1">{{translate('CURP/RFC (SITUACION FISCAL)')}}</span>
+                                    <span class="ml-1">{{translate('Business TIN')}}</span>
                                 </h5>
                             </div>
                             <div class="card-body">
@@ -398,15 +398,13 @@
                                     </div>
                                     <ul class="address-info address-info-2 list-unstyled list-unstyled-py-3 text-dark">
                                         <li>
-                                            <span><strong>{{ translate('CURP/RFC (SITUACION FISCAL)') }}: </strong></span>
+                                            <span><strong>{{ translate('Taxpayer Identification Number(TIN)') }}: </strong></span>
                                             <span class="pl-1">{{$store->tin}}</span>
                                         </li>
-                                        @if($store->cofepris_document_image ?? null)
                                         <li>
-                                            <span><strong>{{ translate('COFEPRIS Document') }}: </strong></span>
-                                            <a href="{{ $store->cofepris_document_image_full_url }}" target="_blank">{{ translate('View document') }}</a>
+                                            <span><strong>{{ translate('Expire Date') }}: </strong></span>
+                                            <span class="pl-1">{{$store->tin_expire_date}}</span>
                                         </li>
-                                        @endif
                                     </ul>
                                 </div>
                             </div>

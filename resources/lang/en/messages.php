@@ -8910,4 +8910,7 @@ Smartly or Earn. ',
   'The maximum coverage area must be greater than 1000.' => 'The maximum coverage area must be greater than 1000.',
   'Coverage_area_overlapped' => 'Coverage area overlapped',
   'jpg, png. File size : max 2 MB' => 'Jpg, png. File size : max 2 MB',
+  'pdf, jpg. max 2 MB' => 'Pdf, jpg. max 2 MB',
+  'jpg, png. max 2 MB' => 'Jpg, png. max 2 MB',
+  'Abastos' => 'Abastos',
 );

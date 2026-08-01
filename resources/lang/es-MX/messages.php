@@ -8908,4 +8908,6 @@ Smartly or Earn. ',
   '_otherwise,_all_users_will_be_unable_to_pay_via_digital_payments.' => ' otherwise, all users will be unable to pay via digital payments.',
   'Delivery' => 'Delivery',
   'Toggle RTL' => 'Toggle RTL',
+  'pdf, jpg. max 2 MB' => 'Pdf, jpg. max 2 MB',
+  'jpg, png. max 2 MB' => 'Jpg, png. max 2 MB',
 );
