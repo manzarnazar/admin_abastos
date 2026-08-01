@@ -26,18 +26,22 @@ class AddonActivationController extends Controller
 
     public function activation(Request $request): Redirector|RedirectResponse|Application
     {
+        $activationStatus = (int)($request['status'] ?? 0);
         $data = $this->addonService->addonActivationProcess(request: $request);
+
         if ($data['status']) {
             Helpers::businessUpdateOrInsert(['key' => $request['key']], [
                 'value' => json_encode([
-                    'activation_status' => $request['status'] ?? 0,
-                    'username' => $request['username'],
-                    'purchase_key' => $request['purchase_key'],
+                    'activation_status' => $activationStatus,
+                    'username' => $request['username'] ?? '',
+                    'purchase_key' => $request['purchase_key'] ?? '',
                 ])
             ]);
-            Toastr::success(translate('activated_successfully'));
+            Toastr::success($activationStatus
+                ? translate('activated_successfully')
+                : translate('status_updated_successfully'));
         } else {
-            Toastr::error($data['message']);
+            Toastr::error($data['message'] ?? translate('Activation_failed'));
         }
         return back();
     }
