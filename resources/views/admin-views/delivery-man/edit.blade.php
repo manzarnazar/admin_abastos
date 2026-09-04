@@ -89,8 +89,6 @@
                                         </select>
                                     </div>
                                 </div>
-                                    </div>
-                                </div>
                                 <div class="col-sm-6">
                                     <div class="form-group mb-0">
                                         <label class="input-label" for="exampleFormControlInput1">{{translate('messages.zone')}} <span class="form-label-secondary text-danger"
