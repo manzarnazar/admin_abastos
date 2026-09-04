@@ -121,6 +121,7 @@
   'Please_enter_a_valid_email_address.' => 'Por favor ingrese una dirección de correo válida.',
   'password' => 'Contraseña',
   'password_length_placeholder' => 'Se requieren :length caracteres',
+  'password_must_be_8_characters_with_number_and_capital' => 'Debe tener al menos 8 caracteres, un número y una letra mayúscula',
   'invalid_password_warning' => 'Advertencia de contraseña inválida',
   'remember_me' => 'Recordarme',
   'Forget Password' => 'Olvidé mi contraseña',

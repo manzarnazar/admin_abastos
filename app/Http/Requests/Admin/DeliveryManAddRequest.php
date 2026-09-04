@@ -5,7 +5,6 @@ namespace App\Http\Requests\Admin;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
-use Illuminate\Validation\Rules\Password;
 
 /**
  * @property int id
@@ -46,8 +45,9 @@ class DeliveryManAddRequest extends FormRequest
             'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|max:20|unique:delivery_men',
             'zone_id' => 'required',
             'earning' => 'required',
+            'role' => 'nullable|in:driver,diablero',
             'vehicle_id' => 'required',
-            'password' => ['required', Password::min(8)->mixedCase()->letters()->numbers()->symbols()->uncompromised(),
+            'password' => ['required', 'min:8', 'regex:/^(?=.*[A-Z])(?=.*\d).{8,}$/',
                 function ($attribute, $value, $fail) {
                     if (strpos($value, ' ') !== false) {
                         $fail('The :attribute cannot contain white spaces.');
@@ -71,12 +71,8 @@ class DeliveryManAddRequest extends FormRequest
             'vehicle_id.required' => translate('messages.select_a_vehicle'),
             'earning.required' => translate('messages.select_dm_type'),
             'password.required' => translate('The password is required'),
-            'password.min_length' => translate('The password must be at least :min characters long'),
-            'password.mixed' => translate('The password must contain both uppercase and lowercase letters'),
-            'password.letters' => translate('The password must contain letters'),
-            'password.numbers' => translate('The password must contain numbers'),
-            'password.symbols' => translate('The password must contain symbols'),
-            'password.uncompromised' => translate('The password is compromised. Please choose a different one'),
+            'password.min' => translate('The password must be at least :min characters long'),
+            'password.regex' => translate('messages.password_must_be_8_characters_with_number_and_capital'),
             'password.custom' => translate('The password cannot contain white spaces.'),
         ];
     }

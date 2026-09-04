@@ -36,11 +36,19 @@
                         </select>
                     </div>
                     <div class="min--200">
-                        <select name="job_type" class="form-control js-select2-custom set-filter" data-filter="job_type"
+                                        <select name="job_type" class="form-control js-select2-custom set-filter" data-filter="job_type"
                         data-url="{{ url()->full() }}">
                             <option  value="all">{{ translate('messages.All_Job_Types') }}</option>
                             <option  {{ request()?->get('job_type') == 'freelancer' ? 'selected' : '' }} value="freelancer">{{ translate('messages.Freelancer') }}</option>
                             <option {{  request()?->get('job_type') == 'salary_base' ? 'selected' : '' }}  value="salary_base">{{ translate('messages.Salary_Base') }}</option>
+                        </select>
+                    </div>
+                    <div class="min--200">
+                        <select name="role" class="form-control js-select2-custom set-filter" data-filter="role"
+                        data-url="{{ url()->full() }}">
+                            <option value="all">{{ translate('messages.All_Types') }}</option>
+                            <option {{ request()?->get('role') == 'driver' ? 'selected' : '' }} value="driver">{{ translate('messages.driver') }}</option>
+                            <option {{ request()?->get('role') == 'diablero' ? 'selected' : '' }} value="diablero">{{ translate('messages.diablero') }}</option>
                         </select>
                     </div>
                     @if(!isset(auth('admin')->user()->zone_id))
@@ -118,6 +126,7 @@
                         <th class="border-0 text-capitalize">{{translate('messages.name')}}</th>
                         <th class="border-0 text-capitalize">{{translate('messages.contact_info')}}</th>
                         <th class="border-0 text-capitalize">{{translate('messages.zone')}}</th>
+                        <th class="border-0 text-capitalize">{{translate('messages.role')}}</th>
                         <th class="border-0 text-capitalize">{{translate('messages.Total_Completed_Orders')}}</th>
                         <th class="border-0 text-capitalize">{{translate('messages.availability_status')}}</th>
                         <th class="border-0 text-capitalize">{{translate('messages.Status')}}</th>
@@ -153,6 +162,9 @@
                                 @else
                                 <label class="text--title font-medium mb-0">{{translate('messages.zone_deleted')}}</label>
                                 @endif
+                            </td>
+                            <td>
+                                <label class="text--title font-medium mb-0 text-capitalize">{{ translate('messages.'.($dm->role ?? 'driver')) }}</label>
                             </td>
                             <td>
                                 <a class="deco-none" href="{{route('admin.users.delivery-man.preview',['id'=> $dm['id'],'tab' => 'transaction' ])}}">{{count($dm['order_transaction'])}}</a>

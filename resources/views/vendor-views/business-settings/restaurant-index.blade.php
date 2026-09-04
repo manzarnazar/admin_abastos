@@ -387,6 +387,20 @@
                             </div>
                         </div>
 
+                        <div class="col-sm-4 col-12">
+                            <div class="">
+                                <label class="d-flex justify-content-between switch toggle-switch-sm text-dark"
+                                    for="requires_diablero">
+                                    <span>{{ translate('messages.requires_diablero') }}</span>
+                                    <input type="checkbox" class="toggle-switch-input" name="requires_diablero" value="1" id="requires_diablero"
+                                        {{ $store->storeConfig?->requires_diablero == 1 ? 'checked' : '' }}>
+                                    <span class="toggle-switch-label">
+                                        <span class="toggle-switch-indicator"></span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
                         @php($extra_packaging_data = \App\Models\BusinessSetting::where('key', 'extra_packaging_data')->first()?->value ?? '')
                         @php($extra_packaging_data = json_decode($extra_packaging_data, true))
                         @if (!empty($extra_packaging_data) && $extra_packaging_data[$store->module->module_type] == '1')

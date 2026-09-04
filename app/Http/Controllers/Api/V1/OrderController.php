@@ -59,6 +59,10 @@ class OrderController extends Controller
             $order['store'] = $order['store'] ? Helpers::store_data_formatting($order['store']) : $order['store'];
             $order['delivery_address'] = $order['delivery_address'] ? json_decode($order['delivery_address']) : $order['delivery_address'];
             $order['delivery_man'] = $order['delivery_man'] ? Helpers::deliverymen_data_formatting([$order['delivery_man']]) : $order['delivery_man'];
+            if ($order->requires_diablero && empty($order->delivery_man_id)) {
+                $order['delivery_man'] = null;
+            }
+            $order->makeHidden(['diablero_id', 'handoff_latitude', 'handoff_longitude']);
             $order['refund_cancellation_note'] = $order['refund'] ? $order['refund']['admin_note'] : null;
             $order['refund_customer_note'] = $order['refund'] ? $order['refund']['customer_note'] : null;
             $order['min_delivery_time'] =  $order->store ? (int) explode('-', $order->store?->delivery_time)[0] ?? 0 : 0;

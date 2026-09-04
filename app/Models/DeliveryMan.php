@@ -25,6 +25,10 @@ class DeliveryMan extends Authenticatable
         'vehicle_id'=>'integer',
     ];
 
+    protected $attributes = [
+        'role' => 'driver',
+    ];
+
     protected $hidden = [
         'password',
         'auth_token',

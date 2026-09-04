@@ -68,6 +68,7 @@ class ZoneService
             'increased_delivery_fee' => $request->increased_delivery_fee ?? 0,
             'increased_delivery_fee_status' => $request->increased_delivery_fee_status ?? 0,
             'increase_delivery_charge_message' => $request->increase_delivery_charge_message ?? null,
+            'requires_diablero' => $request->boolean('requires_diablero') ? 1 : 0,
         ];
     }
 

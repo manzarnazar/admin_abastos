@@ -1774,12 +1774,16 @@ class Helpers
                         'image' => '',
                     ];
                     if ($order->zone && self::getNotificationStatusData('deliveryman', 'deliveryman_order_notification', 'push_notification_status')) {
+                        if ($order->requires_diablero) {
+                            \App\CentralLogics\TwoStageDelivery::notifyRole($order, 'diablero');
+                        } else {
                         if ($order->dm_vehicle_id) {
 
                             $topic = 'delivery_man_' . $order->zone_id . '_' . $order->dm_vehicle_id;
                             self::send_push_notif_to_topic($data, $topic, 'order_request');
                         }
                         self::send_push_notif_to_topic($data, $order->zone->deliveryman_wise_topic, 'order_request');
+                        }
 
 
                     }
@@ -1908,14 +1912,29 @@ class Helpers
                     self::send_push_notif_to_topic($data, "restaurant_dm_" . $order->store_id, 'order_request', null);
                 } else {
                     if ($order->zone && self::getNotificationStatusData('deliveryman', 'deliveryman_order_notification', 'push_notification_status')) {
-                        if ($order->dm_vehicle_id) {
+                        if ($order->requires_diablero) {
+                            \App\CentralLogics\TwoStageDelivery::notifyRole($order, 'diablero');
+                        } else {
+                            if ($order->dm_vehicle_id) {
 
-                            $topic = 'delivery_man_' . $order->zone_id . '_' . $order->dm_vehicle_id;
-                            self::send_push_notif_to_topic($data, $topic, 'order_request');
+                                $topic = 'delivery_man_' . $order->zone_id . '_' . $order->dm_vehicle_id;
+                                self::send_push_notif_to_topic($data, $topic, 'order_request');
+                            }
+                            self::send_push_notif_to_topic($data, $order->zone->deliveryman_wise_topic, 'order_request');
                         }
-                        self::send_push_notif_to_topic($data, $order->zone->deliveryman_wise_topic, 'order_request');
                     }
                 }
+            }
+
+            if (in_array($order->order_status, ['processing', 'handover']) && $order->requires_diablero && $order->diablero && self::getNotificationStatusData('deliveryman', 'deliveryman_order_notification', 'push_notification_status')) {
+                $data = [
+                    'title' => translate('Order_Notification'),
+                    'description' => $order->order_status == 'processing' ? translate('order_is_processing') : translate('messages.ready_for_delivery'),
+                    'order_id' => $order->id,
+                    'image' => '',
+                    'type' => 'order_status'
+                ];
+                self::send_push_notif_to_device($order->diablero->fcm_token, $data);
             }
 
             if (in_array($order->order_status, ['processing', 'handover']) && $order->delivery_man && self::getNotificationStatusData('deliveryman', 'deliveryman_order_notification', 'push_notification_status')) {

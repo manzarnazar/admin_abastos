@@ -92,6 +92,18 @@
                                 <div class="col-sm-6">
                                     <div class="form-group mb-0">
                                         <label class="input-label"
+                                            for="role">{{ translate('messages.role') }}
+                                            <span class="form-label-secondary text-danger"> *</span>
+                                        </label>
+                                        <select name="role" required class="form-control js-select2-custom">
+                                            <option value="driver">{{ translate('messages.driver') }}</option>
+                                            <option value="diablero">{{ translate('messages.diablero') }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="form-group mb-0">
+                                        <label class="input-label"
                                             for="exampleFormControlInput1">{{ translate('messages.zone') }} <span
                                                 class="form-label-secondary text-danger" data-toggle="tooltip"
                                                 data-placement="right"
@@ -245,9 +257,9 @@
                                 <label class="input-label"
                                     for="signupSrPassword">{{ translate('messages.password') }}<span
                                         class="form-label-secondary" data-toggle="tooltip" data-placement="right"
-                                        data-original-title="{{ translate('messages.Must_contain_at_least_one_number_and_one_uppercase_and_lowercase_letter_and_symbol,_and_at_least_8_or_more_characters') }}"><img
+                                        data-original-title="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}"><img
                                             src="{{ asset('/public/assets/admin/img/info-circle.svg') }}"
-                                            alt="{{ translate('messages.Must_contain_at_least_one_number_and_one_uppercase_and_lowercase_letter_and_symbol,_and_at_least_8_or_more_characters') }}"></span> <span
+                                            alt="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}"></span> <span
                                             class="form-label-secondary text-danger" data-toggle="tooltip"
                                             data-placement="right"
                                             data-original-title="{{ translate('messages.Required.') }}"> *
@@ -255,11 +267,11 @@
 
                                 <div class="input-group input-group-merge">
                                     <input type="password" class="js-toggle-password form-control" name="password"
-                                        id="signupSrPassword" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-                                        title="{{ translate('messages.Must_contain_at_least_one_number_and_one_uppercase_and_lowercase_letter_and_symbol,_and_at_least_8_or_more_characters') }}"
-                                        placeholder="{{ translate('messages.password_length_placeholder', ['length' => '8+']) }}"
-                                        aria-label="8+ characters required" required
-                                        data-msg="Your password is invalid. Please try again."
+                                        id="signupSrPassword" pattern="(?=.*\d)(?=.*[A-Z]).{8,}"
+                                        title="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}"
+                                        placeholder="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}"
+                                        aria-label="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}" required
+                                        data-msg="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}"
                                         data-hs-toggle-password-options='{
                                     "target": [".js-toggle-password-target-1"],
                                     "defaultClass": "tio-hidden-outlined",
@@ -285,10 +297,10 @@
                                 </label>
                                 <div class="input-group input-group-merge">
                                     <input type="password" class="js-toggle-password form-control" name="confirmPassword"
-                                        id="signupSrConfirmPassword" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-                                        title="{{ translate('messages.Must_contain_at_least_one_number_and_one_uppercase_and_lowercase_letter_and_symbol,_and_at_least_8_or_more_characters') }}"
-                                        placeholder="{{ translate('messages.password_length_placeholder', ['length' => '8+']) }}"
-                                        aria-label="8+ characters required" required
+                                        id="signupSrConfirmPassword" pattern="(?=.*\d)(?=.*[A-Z]).{8,}"
+                                        title="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}"
+                                        placeholder="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}"
+                                        aria-label="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}" required
                                         data-msg="Password does not match the confirm password."
                                         data-hs-toggle-password-options='{
                                         "target": [".js-toggle-password-target-2"],

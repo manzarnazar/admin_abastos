@@ -46,6 +46,10 @@ class Order extends Model
         'is_guest' => 'boolean',
         'ref_bonus_amount' => 'float',
         'bring_change_amount'=>'integer',
+        'requires_diablero' => 'boolean',
+        'diablero_id' => 'integer',
+        'handoff_latitude' => 'float',
+        'handoff_longitude' => 'float',
     ];
 
     protected $appends = ['module_type','order_attachment_full_url','order_proof_full_url'];
@@ -129,6 +133,11 @@ class Order extends Model
         return $this->belongsTo(DeliveryMan::class, 'delivery_man_id');
     }
 
+    public function diablero()
+    {
+        return $this->belongsTo(DeliveryMan::class, 'diablero_id');
+    }
+
     public function customer()
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -166,8 +175,12 @@ class Order extends Model
 
     public function dm_last_location()
     {
-        // return $this->hasOne(DeliveryHistory::class, 'order_id')->latest();
-        return $this->delivery_man->last_location();
+        return $this->delivery_man?->last_location();
+    }
+
+    public function diablero_last_location()
+    {
+        return $this->diablero?->last_location();
     }
 
     public function transaction()
@@ -211,7 +224,7 @@ class Order extends Model
 
     public function scopeOngoing($query)
     {
-        return $query->whereIn('order_status', ['accepted', 'confirmed', 'processing', 'handover', 'picked_up']);
+        return $query->whereIn('order_status', ['accepted', 'confirmed', 'processing', 'handover', 'picked_up', 'diablero_assigned', 'diablero_picked_up', 'handed_to_vehicle', 'delivery_man_assigned', 'out_for_delivery']);
     }
 
     public function scopeItemOnTheWay($query)
@@ -262,7 +275,25 @@ class Order extends Model
 
     public function scopeSearchingForDeliveryman($query)
     {
-        return $query->whereNull('delivery_man_id')->whereIn('order_type', ['delivery', 'parcel'])->whereNotIn('order_status', ['delivered', 'failed', 'canceled', 'refund_requested', 'refund_request_canceled', 'refunded']);
+        $terminal = ['delivered', 'failed', 'canceled', 'refund_requested', 'refund_request_canceled', 'refunded'];
+
+        return $query->whereIn('order_type', ['delivery', 'parcel'])
+            ->whereNotIn('order_status', $terminal)
+            ->where(function ($q) {
+                $q->where(function ($single) {
+                    $single->where(function ($flag) {
+                        $flag->where('requires_diablero', 0)->orWhereNull('requires_diablero');
+                    })->whereNull('delivery_man_id');
+                })->orWhere(function ($leg1) {
+                    $leg1->where('requires_diablero', 1)
+                        ->whereNull('diablero_id')
+                        ->whereIn('order_status', ['pending', 'confirmed', 'accepted', 'processing', 'handover']);
+                })->orWhere(function ($leg2) {
+                    $leg2->where('requires_diablero', 1)
+                        ->where('order_status', 'handed_to_vehicle')
+                        ->whereNull('delivery_man_id');
+                });
+            });
     }
 
     public function scopeDelivery($query)

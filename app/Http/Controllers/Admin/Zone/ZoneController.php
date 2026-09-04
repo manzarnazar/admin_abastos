@@ -116,7 +116,7 @@ class ZoneController extends BaseController
             Toastr::warning(translate('messages.you_can_not_delete_this_zone_please_add_a_new_zone_to_delete'));
             return back();
         }
-        if(Order::where('zone_id',$request['id'])->whereIn('order_status', ['pending','accepted','confirmed','processing','handover','picked_up'])->exists())
+        if(Order::where('zone_id',$request['id'])->whereIn('order_status', ['pending','accepted','confirmed','processing','handover','picked_up','diablero_assigned','diablero_picked_up','handed_to_vehicle','delivery_man_assigned','out_for_delivery'])->exists())
         {
             Toastr::warning(translate('messages.you_can_not_delete_this_zone_Please_complete_the_ongoing_orders_of_this_zone'));
             return back();
@@ -189,7 +189,8 @@ class ZoneController extends BaseController
         $paymentData=[
             'cash_on_delivery'=>$request->cash_on_delivery && data_get($cash_on_delivery ,'status') == 1 ? 1 :0,
             'digital_payment'=>$request->digital_payment && data_get($digital_payment ,'status') == 1 ? :0,
-            'offline_payment'=>$request->offline_payment && $offline_payment == 1 ? 1 :0
+            'offline_payment'=>$request->offline_payment && $offline_payment == 1 ? 1 :0,
+            'requires_diablero' => $request->boolean('requires_diablero') ? 1 : 0,
         ];
         $data = $this->zoneService->checkModuleDeliveryCharge(moduleData: $request->module_data, selectedModules: $request->module_id);
 

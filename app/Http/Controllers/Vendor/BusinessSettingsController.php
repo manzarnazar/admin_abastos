@@ -71,6 +71,7 @@ class BusinessSettingsController extends Controller
         );
         $conf->extra_packaging_amount = $request->extra_packaging_amount ?? 0;
         $conf->extra_packaging_status = $request->extra_packaging_status ?? 0;
+        $conf->requires_diablero = $request->requires_diablero ?? 0;
         $conf->minimum_stock_for_warning = $request->minimum_stock_for_warning ?? 0;
         $conf->save();
         if($store->module_type == 'rental' && addon_published_status('Rental')){

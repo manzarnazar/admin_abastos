@@ -94,6 +94,18 @@
             <div class="col-md-12 mb-2">
                 <div class="card">
                     <div class="card-body">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="1" name="requires_diablero" id="requires_diablero"
+                                   {{ $zone->requires_diablero ? 'checked' : '' }}>
+                            <label class="form-check-label" for="requires_diablero">{{ translate('messages.requires_diablero') }}</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-12 mb-2">
+                <div class="card">
+                    <div class="card-body">
                         <div class="form-group mb-0">
                             <label class="input-label"
                                    for="exampleFormControlSelect1">{{ translate('Choose_Business_Module_To_Connect') }}
