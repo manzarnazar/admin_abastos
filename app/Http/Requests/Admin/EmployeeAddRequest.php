@@ -5,7 +5,6 @@ namespace App\Http\Requests\Admin;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
-use Illuminate\Validation\Rules\Password;
 
 /**
  * @property int id
@@ -46,7 +45,7 @@ class EmployeeAddRequest extends FormRequest
             'image' => 'required',
             'email' => 'required|unique:admins',
             'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|max:20|unique:admins',
-            'password' => ['required', Password::min(8)->mixedCase()->letters()->numbers()->symbols()->uncompromised()],
+            'password' => ['required', 'min:8', 'regex:/^(?=.*[A-Z])(?=.*\d).{8,}$/'],
         ];
     }
 
@@ -56,12 +55,8 @@ class EmployeeAddRequest extends FormRequest
             'f_name.required' => translate('messages.first_name_is_required'),
             'role_id.not_in' => translate('messages.unauthorized'),
             'password.required' => translate('The password is required'),
-            'password.min_length' => translate('The password must be at least :min characters long'),
-            'password.mixed' => translate('The password must contain both uppercase and lowercase letters'),
-            'password.letters' => translate('The password must contain letters'),
-            'password.numbers' => translate('The password must contain numbers'),
-            'password.symbols' => translate('The password must contain symbols'),
-            'password.uncompromised' => translate('The password is compromised. Please choose a different one'),
+            'password.min' => translate('The password must be at least :min characters long'),
+            'password.regex' => translate('messages.password_must_be_8_characters_with_number_and_capital'),
         ];
     }
 }

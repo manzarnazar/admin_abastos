@@ -137,16 +137,16 @@
                     <div class="col-md-4">
                         <div class="js-form-message form-group mb-0">
                             <label class="input-label" for="signupSrPassword">{{translate('messages.password')}}<span class="form-label-secondary" data-toggle="tooltip" data-placement="top"
-        data-original-title="{{ translate('messages.Must_contain_at_least_one_number_and_one_uppercase_and_lowercase_letter_and_symbol,_and_at_least_8_or_more_characters') }}"><img src="{{ asset('/public/assets/admin/img/info-circle.svg') }}" alt="{{ translate('messages.Must_contain_at_least_one_number_and_one_uppercase_and_lowercase_letter_and_symbol,_and_at_least_8_or_more_characters') }}"></span> <span class="form-label-secondary text-danger"
+        data-original-title="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}"><img src="{{ asset('/public/assets/admin/img/info-circle.svg') }}" alt="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}"></span> <span class="form-label-secondary text-danger"
                             data-toggle="tooltip" data-placement="top"
                             data-original-title="{{ translate('messages.Required.')}}"> *
                             </span> </label>
 
                             <div class="input-group input-group-merge">
-                                <input type="password" class="js-toggle-password form-control" name="password" id="signupSrPassword" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" title="{{ translate('messages.Must_contain_at_least_one_number_and_one_uppercase_and_lowercase_letter_and_symbol,_and_at_least_8_or_more_characters') }}"
-                                placeholder="{{ translate('messages.password_length_placeholder', ['length' => '8+']) }}"
-                                aria-label="8+ characters required" required
-                                data-msg="Your password is invalid. Please try again."
+                                <input type="password" class="js-toggle-password form-control" name="password" id="signupSrPassword" pattern="(?=.*\d)(?=.*[A-Z]).{8,}" title="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}"
+                                placeholder="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}"
+                                aria-label="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}" required
+                                data-msg="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}"
                                 data-hs-toggle-password-options='{
                                 "target": [".js-toggle-password-target-1", ".js-toggle-password-target-2"],
                                 "defaultClass": "tio-hidden-outlined",
@@ -168,9 +168,9 @@
                             data-original-title="{{ translate('messages.Required.')}}"> *
                             </span> </label>
                             <div class="input-group input-group-merge">
-                            <input type="password" class="js-toggle-password form-control" name="confirmPassword" id="signupSrConfirmPassword" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" title="{{ translate('messages.Must_contain_at_least_one_number_and_one_uppercase_and_lowercase_letter_and_symbol,_and_at_least_8_or_more_characters') }}"
-                            placeholder="{{ translate('messages.password_length_placeholder', ['length' => '8+']) }}"
-                            aria-label="8+ characters required" required
+                            <input type="password" class="js-toggle-password form-control" name="confirmPassword" id="signupSrConfirmPassword" pattern="(?=.*\d)(?=.*[A-Z]).{8,}" title="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}"
+                            placeholder="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}"
+                            aria-label="{{ translate('messages.password_must_be_8_characters_with_number_and_capital') }}" required
                                     data-msg="Password does not match the confirm password."
                                     data-hs-toggle-password-options='{
                                     "target": [".js-toggle-password-target-1", ".js-toggle-password-target-2"],
