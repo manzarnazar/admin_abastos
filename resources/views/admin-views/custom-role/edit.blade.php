@@ -186,6 +186,13 @@
                             </div>
                             <div class="check-item">
                                 <div class="form-group form-check form--check">
+                                    <input type="checkbox" name="modules[]" value="diablero" class="form-check-input"
+                                           id="diablero"  {{in_array('diablero',(array)json_decode($role['modules']))?'checked':''}}>
+                                    <label class="form-check-label qcont text-dark" for="diablero">{{translate('messages.diablero')}}</label>
+                                </div>
+                            </div>
+                            <div class="check-item">
+                                <div class="form-group form-check form--check">
                                     <input type="checkbox" name="modules[]" value="employee" class="form-check-input"
                                            id="employee"  {{in_array('employee',(array)json_decode($role['modules']))?'checked':''}}>
                                     <label class="form-check-label qcont text-dark" for="employee">{{translate('messages.Employee')}}</label>

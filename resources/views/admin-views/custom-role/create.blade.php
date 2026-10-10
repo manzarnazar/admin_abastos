@@ -164,6 +164,13 @@
                             </div>
                             <div class="check-item">
                                 <div class="form-group form-check form--check">
+                                    <input type="checkbox" name="modules[]" value="diablero" class="form-check-input"
+                                           id="diablero">
+                                    <label class="form-check-label qcont text-dark" for="diablero">{{translate('messages.diablero')}}</label>
+                                </div>
+                            </div>
+                            <div class="check-item">
+                                <div class="form-group form-check form--check">
                                     <input type="checkbox" name="modules[]" value="employee" class="form-check-input"
                                            id="employee">
                                     <label class="form-check-label qcont text-dark" for="employee">{{translate('messages.Employee')}}</label>

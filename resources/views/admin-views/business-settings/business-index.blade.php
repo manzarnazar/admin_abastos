@@ -1166,6 +1166,59 @@
                                 </div>
                             </div>
                         </div>
+                        @php($diablero_settings = \App\Models\BusinessSetting::whereIn('key', ['diablero_service_status', 'diablero_fee_name', 'diablero_fee', 'diablero_commission'])->pluck('value', 'key'))
+                        <div class="__bg-F8F9FC-card p-0 mt-4">
+                            <div class="border-bottom p-3">
+                                <h4 class="card-title m-0 text--title">{{ translate('messages.diablero_service') }}</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-sm-6 col-lg-3">
+                                        <div class="form-group mb-0">
+                                            <label class="toggle-switch h--45px toggle-switch-sm d-flex justify-content-between border rounded px-3 py-0 form-control">
+                                                <span class="pr-1 d-flex align-items-center switch--label">
+                                                    <span class="line--limit-1">{{ translate('messages.diablero_service') }}</span>
+                                                    <span class="form-label-secondary text-danger d-flex" data-toggle="tooltip" data-placement="right"
+                                                        data-original-title="{{ translate('messages.If_enabled,_orders_in_diablero_zones_are_collected_by_a_diablero_and_handed_to_the_deliveryman_at_the_loading_zone.') }}"><img
+                                                            src="{{ asset('/public/assets/admin/img/info-circle.svg') }}" alt="info"></span>
+                                                </span>
+                                                <input type="checkbox" class="toggle-switch-input" value="1" name="diablero_service_status" id="diablero_service_status"
+                                                    {{ ($diablero_settings['diablero_service_status'] ?? 0) == 1 ? 'checked' : '' }}>
+                                                <span class="toggle-switch-label text">
+                                                    <span class="toggle-switch-indicator"></span>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6 col-lg-3">
+                                        <div class="form-group mb-0">
+                                            <label class="form-label text-capitalize mb-1" for="diablero_fee_name">{{ translate('messages.diablero_fee_name') }}</label>
+                                            <input type="text" name="diablero_fee_name" class="form-control" id="diablero_fee_name" maxlength="191"
+                                                placeholder="{{ translate('messages.Ex:_Diablero_Fee') }}" value="{{ $diablero_settings['diablero_fee_name'] ?? 'Diablero Fee' }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6 col-lg-3">
+                                        <div class="form-group mb-0">
+                                            <label class="form-label text-capitalize mb-1" for="diablero_fee">{{ translate('messages.diablero_fee') }} ({{ \App\CentralLogics\Helpers::currency_symbol() }})</label>
+                                            <input type="number" name="diablero_fee" class="form-control" id="diablero_fee" min="0" step=".01"
+                                                value="{{ $diablero_settings['diablero_fee'] ?? 0 }}">
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6 col-lg-3">
+                                        <div class="form-group mb-0">
+                                            <label class="form-label text-capitalize mb-1" for="diablero_commission">
+                                                {{ translate('messages.admin_commission_on_diablero_fee') }} (%)
+                                                <span class="form-label-secondary" data-toggle="tooltip" data-placement="right"
+                                                    data-original-title="{{ translate('messages.Share_of_the_diablero_fee_kept_by_admin._The_rest_is_the_diablero_earning.') }}"><img
+                                                        src="{{ asset('/public/assets/admin/img/info-circle.svg') }}" alt="info"></span>
+                                            </label>
+                                            <input type="number" name="diablero_commission" class="form-control" id="diablero_commission" min="0" max="100" step=".01"
+                                                value="{{ $diablero_settings['diablero_commission'] ?? 0 }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <div class="__bg-F8F9FC-card p-0 mt-4">
                             <div class="border-bottom p-3">
                                 <h4 class="card-title m-0 text--title">{{translate('Payment')}}</h4>

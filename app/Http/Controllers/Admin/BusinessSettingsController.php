@@ -652,6 +652,19 @@ class BusinessSettingsController extends Controller
             'value' => $request['additional_charge'] ? $request['additional_charge'] : null,
         ]);
 
+        Helpers::businessUpdateOrInsert(['key' => 'diablero_service_status'], [
+            'value' => $request['diablero_service_status'] ? 1 : 0,
+        ]);
+        Helpers::businessUpdateOrInsert(['key' => 'diablero_fee_name'], [
+            'value' => $request['diablero_fee_name'] ?: 'Diablero Fee',
+        ]);
+        Helpers::businessUpdateOrInsert(['key' => 'diablero_fee'], [
+            'value' => max(0, (float) $request['diablero_fee']),
+        ]);
+        Helpers::businessUpdateOrInsert(['key' => 'diablero_commission'], [
+            'value' => min(100, max(0, (float) $request['diablero_commission'])),
+        ]);
+
         Helpers::businessUpdateOrInsert(['key' => 'guest_checkout_status'], [
             'value' => $request['guest_checkout_status'] ? $request['guest_checkout_status'] : 0,
         ]);

@@ -473,7 +473,7 @@
                                 $total_addon_price = 0;
                                 $product_price = 0;
                                 if ($order->prescription_order == 1) {
-                                    $product_price = $order['order_amount'] - $order['delivery_charge'] - $order['total_tax_amount'] - $order['dm_tips'] - $order['additional_charge'] + $order['store_discount_amount'];
+                                    $product_price = $order['order_amount'] - $order['delivery_charge'] - $order['total_tax_amount'] - $order['dm_tips'] - $order['additional_charge'] - (float) $order['diablero_fee'] + $order['store_discount_amount'];
                                     if($order->tax_status == 'included'){
                                         $product_price += $order['total_tax_amount'];
                                     }
@@ -945,6 +945,14 @@
                                     <dd class="col-6">
                                         + {{ \App\CentralLogics\Helpers::format_currency($additional_charge) }}</dd>
 
+                                    @php($diablero_fee = (float) ($order['diablero_fee'] ?? 0))
+                                    @if ($diablero_fee > 0)
+                                        <dt class="col-6">{{ \App\CentralLogics\Helpers::get_business_data('diablero_fee_name') ?: translate('messages.diablero_fee') }}:</dt>
+                                        <dd class="col-6">
+                                            + {{ \App\CentralLogics\Helpers::format_currency($diablero_fee) }}
+                                        </dd>
+                                    @endif
+
                                     @if ($extra_packaging_amount > 0)
                                         <dt class="col-6">{{ translate('messages.Extra_Packaging_Amount') }}:</dt>
                                         <dd class="col-6">
@@ -955,7 +963,7 @@
                                     <dt class="col-6">{{ translate('messages.total') }} {{ $order->tax_status == 'included' ? '('.translate('messages.TAX_Included').')'  :'' }} : </dt>
                                     <dd class="col-6">
 
-                                        {{ \App\CentralLogics\Helpers::format_currency($product_price + $del_c + $total_tax_amount + $total_addon_price + $deliverman_tips + $additional_charge - $coupon_discount_amount - $store_discount_amount - $admin_flash_discount_amount - $store_flash_discount_amount - $ref_bonus_amount +$extra_packaging_amount )  }}
+                                        {{ \App\CentralLogics\Helpers::format_currency($product_price + $del_c + $total_tax_amount + $total_addon_price + $deliverman_tips + $additional_charge + $diablero_fee - $coupon_discount_amount - $store_discount_amount - $admin_flash_discount_amount - $store_flash_discount_amount - $ref_bonus_amount +$extra_packaging_amount )  }}
                                     </dd>
                                     @if ($order?->payments)
                                         @foreach ($order?->payments as $payment)
@@ -1295,6 +1303,10 @@
                         </div>
                     </div>
                 @endif
+
+                    @if ($order->order_group_id)
+                        @include('admin-views.order.partials._diablero', ['order' => $order])
+                    @endif
 
                     @if ($order->delivery_man && $order['order_type'] != 'take_away' && $order->store)
                         <div class="card mt-2">

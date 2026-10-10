@@ -288,6 +288,9 @@ trait PlaceNewOrder
                         ->when(isset($request->is_buy_now) && $request->is_buy_now == 1 && $request->cart_id, function ($query) use ($request) {
                             return $query->where('id', $request->cart_id);
                         })
+                        ->when(!empty($request->diablero_group), function ($query) use ($request) {
+                            return $query->whereIn('id', $request->diablero_group['cart_ids'] ?? []);
+                        })
                         ->get()->map(function ($data) {
                             $data->add_on_ids = json_decode($data->add_on_ids, true);
                             $data->add_on_qtys = json_decode($data->add_on_qtys, true);
@@ -458,6 +461,10 @@ trait PlaceNewOrder
             $order->flash_admin_discount_amount = round($flash_sale_admin_discount_amount, config('round_up_to_digit'));
             $order->flash_store_discount_amount = round($flash_sale_vendor_discount_amount, config('round_up_to_digit'));
 
+            if (!empty($request->diablero_group)) {
+                \App\CentralLogics\DiableroLogic::applyGroupAdjustments($order, $request->diablero_group);
+            }
+
             //DM TIPS
             $order->order_amount = $order->order_amount + $order->dm_tips + $order->additional_charge + $order->extra_packaging_amount;
             if ($request->payment_method == 'wallet' && $request->user->wallet_balance < $order->order_amount) {
@@ -558,7 +565,9 @@ trait PlaceNewOrder
 
             DB::commit();
 
-            $this->sentOrderPlaceNotification($request, $order, $store);
+            if (empty($request->diablero_group)) {
+                $this->sentOrderPlaceNotification($request, $order, $store);
+            }
 
             return response()->json([
                 'message' => translate('messages.order_placed_successfully'),

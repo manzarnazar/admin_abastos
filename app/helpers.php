@@ -207,6 +207,63 @@ if (! function_exists('order_failed')) {
     }
 }
 
+if (! function_exists('order_group_place')) {
+    function order_group_place($data) {
+        $group = \App\Models\OrderGroup::find($data->attribute_id);
+        if (!$group) {
+            return;
+        }
+        $group->payment_status = 'paid';
+        $group->payment_method = $data->payment_method;
+        $group->save();
+
+        $orders = Order::withoutGlobalScope(\App\Scopes\ZoneScope::class)->where('order_group_id', $group->id)->get();
+        foreach ($orders as $order) {
+            if ($order->payment_status === 'paid' || in_array($order->order_status, ['canceled', 'failed'])) {
+                continue;
+            }
+            $order->order_status = 'confirmed';
+            if ($order->payment_method != 'partial_payment') {
+                $order->payment_method = $data->payment_method;
+            }
+            $order->payment_status = 'paid';
+            $order->confirmed = now();
+            $order->save();
+            OrderLogic::update_unpaid_order_payment(order_id: $order->id, payment_method: $data->payment_method);
+            try {
+                Helpers::send_order_notification($order);
+            } catch (\Throwable $e) {
+                info($e);
+            }
+        }
+    }
+}
+
+if (! function_exists('order_group_failed')) {
+    function order_group_failed($data) {
+        $group = \App\Models\OrderGroup::find($data->attribute_id);
+        if (!$group) {
+            return;
+        }
+        $group->payment_status = 'failed';
+        $group->save();
+
+        $orders = Order::withoutGlobalScope(\App\Scopes\ZoneScope::class)->where('order_group_id', $group->id)->get();
+        foreach ($orders as $order) {
+            if ($order->payment_status === 'paid') {
+                continue;
+            }
+            $order->order_status = 'failed';
+            if ($order->payment_method != 'partial_payment') {
+                $order->payment_method = $data->payment_method;
+            }
+            $order->failed = now();
+            $order->save();
+            \App\CentralLogics\DiableroLogic::syncOrder($order->fresh());
+        }
+    }
+}
+
 if (! function_exists('wallet_success')) {
     function wallet_success($data) {
         $order = WalletPayment::find($data->attribute_id);

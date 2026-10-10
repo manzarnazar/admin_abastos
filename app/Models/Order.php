@@ -46,6 +46,8 @@ class Order extends Model
         'is_guest' => 'boolean',
         'ref_bonus_amount' => 'float',
         'bring_change_amount'=>'integer',
+        'order_group_id' => 'integer',
+        'diablero_fee' => 'float',
     ];
 
     protected $appends = ['module_type','order_attachment_full_url','order_proof_full_url'];
@@ -173,6 +175,26 @@ class Order extends Model
     public function transaction()
     {
         return $this->hasOne(OrderTransaction::class);
+    }
+
+    public function order_group()
+    {
+        return $this->belongsTo(OrderGroup::class, 'order_group_id');
+    }
+
+    public function group()
+    {
+        return $this->order_group();
+    }
+
+    public function diableroTask()
+    {
+        return $this->hasOne(DiableroTask::class, 'order_group_id', 'order_group_id');
+    }
+
+    public function diablero_stop()
+    {
+        return $this->hasOne(DiableroTaskStop::class, 'order_id');
     }
 
     public function parcel_category()

@@ -406,6 +406,14 @@ class VendorController extends Controller
             ], 403);
         }
 
+        if ($diableroBlock = \App\CentralLogics\DiableroLogic::blockedStatusChange($order, $request['status'], \App\CentralLogics\DiableroLogic::ACTOR_VENDOR)) {
+            return response()->json([
+                'errors' => [
+                    ['code' => 'diablero', 'message' => $diableroBlock]
+                ]
+            ], 403);
+        }
+
         if($request['status']=='delivered' && $order->order_type != 'take_away' && !$vendor->stores[0]->sub_self_delivery)
         {
             return response()->json([
@@ -491,6 +499,7 @@ class VendorController extends Controller
         }
         $order[$request['status']] = now();
         $order->save();
+        \App\CentralLogics\DiableroLogic::syncOrder($order, \App\CentralLogics\DiableroLogic::ACTOR_VENDOR, $vendor->id);
         Helpers::send_order_notification($order);
 
         return response()->json(['message' => 'Status updated'], 200);

@@ -411,6 +411,11 @@ class OrderController extends Controller
             return back();
         }
 
+        if ($diableroBlock = \App\CentralLogics\DiableroLogic::blockedStatusChange($order, (string) $request->order_status, \App\CentralLogics\DiableroLogic::ACTOR_ADMIN)) {
+            Toastr::warning($diableroBlock);
+            return back();
+        }
+
         if ($request->order_status == 'delivered' && $order['transaction_reference'] == null && $order['payment_method'] != 'cash_on_delivery') {
             Toastr::warning(translate('messages.add_your_paymen_ref_first'));
             return back();
@@ -571,6 +576,7 @@ class OrderController extends Controller
         }
         $order[$request->order_status] = now();
         $order->save();
+        \App\CentralLogics\DiableroLogic::syncOrder($order, \App\CentralLogics\DiableroLogic::ACTOR_ADMIN, auth('admin')->id());
 
         if (!Helpers::send_order_notification($order)) {
             Toastr::warning(translate('messages.push_notification_faild'));

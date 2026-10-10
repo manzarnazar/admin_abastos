@@ -93,6 +93,19 @@
 
             <div class="col-md-12 mb-2">
                 <div class="card">
+                    <div class="card-body d-flex flex-wrap justify-content-between align-items-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="1" name="diablero_status" id="diablero_status"
+                                   {{ $zone->diablero_status ? 'checked' : '' }}>
+                            <label class="form-check-label" for="diablero_status">{{ translate('messages.enable_diablero_service_in_this_zone') }}</label>
+                        </div>
+                        <a href="{{ route('admin.diablero.loading-zone.index', ['zone_id' => $zone->id]) }}" class="btn btn-sm btn--primary">{{ translate('messages.manage_loading_zones') }}</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-12 mb-2">
+                <div class="card">
                     <div class="card-body">
                         <div class="form-group mb-0">
                             <label class="input-label"

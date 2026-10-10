@@ -76,6 +76,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'vendor' => VendorMiddleware::class,
             'vendor.api' => VendorTokenIsValid::class,
             'dm.api' => DmTokenIsValid::class,
+            'diablero.api' => \App\Http\Middleware\DiableroTokenIsValid::class,
             'module' => ModulePermissionMiddleware::class,
             'installation-check' => InstallationMiddleware::class,
             'actch' => ActivationCheckMiddleware::class,

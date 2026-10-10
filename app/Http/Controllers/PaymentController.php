@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Order;
+use App\Models\OrderGroup;
+use App\Scopes\ZoneScope;
 use Illuminate\Http\Request;
 use App\Models\BusinessSetting;
 use App\Library\Payer;
@@ -40,6 +42,10 @@ class PaymentController extends Controller
     }
     public function payment(Request $request)
     {
+        if ($request->filled('order_group_id')) {
+            return $this->groupPayment($request);
+        }
+
         if ($request->has('callback')) {
             Order::where(['id' => $request->order_id])->update(['callback' => $request['callback']]);
         }
@@ -128,6 +134,82 @@ class PaymentController extends Controller
 
         return redirect($redirect_link);
 
+    }
+
+    private function groupPayment(Request $request)
+    {
+        $group = OrderGroup::where(['id' => $request->order_group_id, 'user_id' => $request['customer_id']])->first();
+        if (!$group) {
+            return response()->json(['errors' => ['code' => 'order-payment', 'message' => 'Data not found']], 403);
+        }
+        $orders = Order::withoutGlobalScope(ZoneScope::class)->where('order_group_id', $group->id)
+            ->where('payment_status', '!=', 'paid')->whereNotIn('order_status', ['canceled', 'failed'])->orderBy('id')->get();
+        if ($orders->isEmpty()) {
+            return response()->json(['errors' => ['code' => 'order-payment', 'message' => 'Data not found']], 403);
+        }
+        if (!$request->has('payment_method')) {
+            return response()->json(['errors' => ['message' => 'Payment not found']], 403);
+        }
+
+        if ($request->has('callback')) {
+            Order::withoutGlobalScope(ZoneScope::class)->whereIn('id', $orders->pluck('id'))->update(['callback' => $request['callback']]);
+            $group->update(['callback' => $request['callback']]);
+        }
+
+        $first = $orders->first();
+        session()->put('customer_id', $request['customer_id']);
+        session()->put('payment_platform', $request['payment_platform']);
+        session()->put('order_id', $first->id);
+
+        if ($first->is_guest) {
+            $address = json_decode($first['delivery_address'], true);
+            $customer = collect([
+                'first_name' => $address['contact_person_name'] ?? '',
+                'last_name' => '',
+                'phone' => $address['contact_person_number'] ?? '',
+                'email' => $address['contact_person_email'] ?? '',
+            ]);
+        } else {
+            $user = User::find($request['customer_id']);
+            if (!$user) {
+                return response()->json(['errors' => ['message' => 'Customer not found']], 403);
+            }
+            $customer = collect([
+                'first_name' => $user['f_name'],
+                'last_name' => $user['l_name'],
+                'phone' => $user['phone'],
+                'email' => $user['email'],
+            ]);
+        }
+
+        $amount = round($orders->sum(fn ($order) => $order->order_amount - $order->partially_paid_amount), 2);
+        $payer = new Payer($customer['first_name'] . ' ' . $customer['last_name'], $customer['email'], $customer['phone'], '');
+        $currency = BusinessSetting::where(['key' => 'currency'])->first()->value;
+        $store_logo = BusinessSetting::where(['key' => 'logo'])->first();
+        $additional_data = [
+            'business_name' => BusinessSetting::where(['key' => 'business_name'])->first()?->value,
+            'business_logo' => \App\CentralLogics\Helpers::get_full_url('business', $store_logo?->value, $store_logo?->storage[0]?->value ?? 'public'),
+        ];
+
+        $payment_info = new PaymentInfo(
+            success_hook: 'order_group_place',
+            failure_hook: 'order_group_failed',
+            currency_code: $currency,
+            payment_method: $request->payment_method,
+            payment_platform: $request['payment_platform'],
+            payer_id: $request['customer_id'],
+            receiver_id: '100',
+            additional_data: $additional_data,
+            payment_amount: $amount,
+            external_redirect_link: $request->has('callback') ? $request['callback'] : session('callback'),
+            attribute: 'order_group',
+            attribute_id: $group->id
+        );
+
+        $receiver_info = new Receiver('receiver_name', 'example.png');
+        $redirect_link = Payment::generate_link($payer, $payment_info, $receiver_info);
+
+        return redirect($redirect_link);
     }
 
     public function success()

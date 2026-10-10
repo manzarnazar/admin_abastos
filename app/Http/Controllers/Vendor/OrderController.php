@@ -254,6 +254,11 @@ class OrderController extends Controller
             return back();
         }
 
+        if ($diableroBlock = \App\CentralLogics\DiableroLogic::blockedStatusChange($order, $request['order_status'], \App\CentralLogics\DiableroLogic::ACTOR_VENDOR)) {
+            Toastr::warning($diableroBlock);
+            return back();
+        }
+
 
 
         if($request['order_status']=='delivered' && $order->order_type != 'take_away' && !Helpers::get_store_data()->sub_self_delivery)
@@ -366,6 +371,7 @@ class OrderController extends Controller
 
         $order[$request['order_status']] = now();
         $order->save();
+        \App\CentralLogics\DiableroLogic::syncOrder($order, \App\CentralLogics\DiableroLogic::ACTOR_VENDOR, Helpers::get_vendor_id());
         if(!Helpers::send_order_notification($order))
         {
             Toastr::warning(translate('messages.push_notification_faild'));

@@ -60,6 +60,7 @@ class Zone extends Model
         'increased_delivery_fee_status',
         'increase_delivery_charge_message',
         'offline_payment',
+        'diablero_status',
     ];
 
     protected $casts = [
@@ -69,6 +70,7 @@ class Zone extends Model
         'cash_on_delivery' => 'boolean',
         'digital_payment' => 'boolean',
         'offline_payment' => 'boolean',
+        'diablero_status' => 'boolean',
         'fixed_shipping_charge' => 'float',
         'coordinates' => Polygon::class,
     ];
@@ -146,6 +148,11 @@ class Zone extends Model
                 return $query->where('locale', app()->getLocale());
             }]);
         });
+    }
+
+    public function loadingZones(): HasMany
+    {
+        return $this->hasMany(LoadingZone::class);
     }
 
     public function modules(): BelongsToMany

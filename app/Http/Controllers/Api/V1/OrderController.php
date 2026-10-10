@@ -25,11 +25,13 @@ use App\Models\OfflinePaymentMethod;
 use Illuminate\Support\Facades\Mail;
 use App\Models\ParcelDeliveryInstruction;
 use App\Traits\PlaceNewOrder;
+use App\Traits\PlaceGroupOrder;
+use App\CentralLogics\DiableroLogic;
 use Illuminate\Support\Facades\Validator;
 
 class OrderController extends Controller
 {
-    use PlaceNewOrder;
+    use PlaceNewOrder, PlaceGroupOrder;
     public function track_order(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -64,6 +66,7 @@ class OrderController extends Controller
             $order['min_delivery_time'] =  $order->store ? (int) explode('-', $order->store?->delivery_time)[0] ?? 0 : 0;
             $order['max_delivery_time'] =  $order->store ? (int) explode('-', $order->store?->delivery_time)[1] ?? 0 : 0;
             $order['offline_payment'] =  isset($order->offline_payments) ? Helpers::offline_payment_formater($order->offline_payments) : null;
+            $order['diablero_info'] = DiableroLogic::orderSummary($order);
 
             unset($order['offline_payments']);
             unset($order['details']);
@@ -250,6 +253,7 @@ class OrderController extends Controller
             $order->save();
             $order?->store ?
             Helpers::increment_order_count($order?->store) : '';
+            DiableroLogic::syncOrder($order, DiableroLogic::ACTOR_CUSTOMER, $request?->user?->id);
 
             Helpers::send_order_notification($order);
             return response()->json(['message' => translate('messages.order_canceled_successfully')], 200);
@@ -675,7 +679,18 @@ class OrderController extends Controller
 
     public function place_order(Request $request)
     {
+        if ($this->requiresDiablero($request)) {
+            return $this->new_place_group_order($request);
+        }
         return $this->new_place_order($request);
+    }
+    public function place_group_order(Request $request)
+    {
+        return $this->new_place_group_order($request);
+    }
+    public function diablero_summary(Request $request)
+    {
+        return $this->diablero_checkout_summary($request);
     }
     public function prescription_place_order(Request $request)
     {

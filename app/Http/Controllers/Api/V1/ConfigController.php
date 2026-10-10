@@ -103,6 +103,10 @@ class ConfigController extends Controller
             'additional_charge',
             'additional_charge_status',
             'additional_charge_name',
+            'diablero_service_status',
+            'diablero_fee',
+            'diablero_fee_name',
+            'diablero_commission',
             'dm_picture_upload_status',
             'partial_payment_status',
             'partial_payment_method',
@@ -363,6 +367,10 @@ class ConfigController extends Controller
             'additional_charge_status' => (int)(isset($settings['additional_charge_status']) ? $settings['additional_charge_status'] : 0),
             'additional_charge_name' => (isset($settings['additional_charge_name']) ? $settings['additional_charge_name'] : 'Service Charge'),
             'additional_charge' => $additional_charge,
+            'diablero_service_status' => (int) ($settings['diablero_service_status'] ?? 0),
+            'diablero_fee' => (float) ($settings['diablero_fee'] ?? 0),
+            'diablero_fee_name' => $settings['diablero_fee_name'] ?? 'Diablero Fee',
+            'diablero_commission' => (float) ($settings['diablero_commission'] ?? 0),
             'partial_payment_status' => (int)(isset($settings['partial_payment_status']) ? $settings['partial_payment_status'] : 0),
             'partial_payment_method' => (isset($settings['partial_payment_method']) ? $settings['partial_payment_method'] : ''),
             'dm_picture_upload_status' => (int)(isset($settings['dm_picture_upload_status']) ? $settings['dm_picture_upload_status'] : 0),
@@ -459,6 +467,10 @@ class ConfigController extends Controller
         });
 
         if (count($data) > 0) {
+            $data = array_map(function ($zone) {
+                $zone['diablero_status'] = \App\CentralLogics\DiableroLogic::isEnabledForZone($zone['id']) ? 1 : 0;
+                return $zone;
+            }, $data);
             return response()->json(['zone_id' => json_encode(array_column($data, 'id')), 'zone_data' => array_values($data)], 200);
         }
 

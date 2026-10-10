@@ -718,6 +718,33 @@
                 @endif
                 <!-- End DeliveryMan -->
 
+                <!-- Diablero -->
+                @if (\App\CentralLogics\Helpers::module_permission_check('diablero'))
+                <li class="nav-item">
+                    <small class="nav-subtitle" title="{{ translate('messages.diablero_management') }}">{{ translate('messages.diablero_management') }}</small>
+                    <small class="tio-more-horizontal nav-subtitle-replacer"></small>
+                </li>
+                <li class="navbar-vertical-aside-has-menu {{ Request::is('admin/diablero/list') || Request::is('admin/diablero/add') || Request::is('admin/diablero/edit*') || Request::is('admin/diablero/view*') ? 'active' : '' }}">
+                    <a class="js-navbar-vertical-aside-menu-link nav-link" href="{{ route('admin.diablero.list') }}" title="{{ translate('messages.diableros') }}">
+                        <i class="tio-user-big nav-icon"></i>
+                        <span class="navbar-vertical-aside-mini-mode-hidden-elements text-truncate">{{ translate('messages.diableros') }}</span>
+                    </a>
+                </li>
+                <li class="navbar-vertical-aside-has-menu {{ Request::is('admin/diablero/task*') ? 'active' : '' }}">
+                    <a class="js-navbar-vertical-aside-menu-link nav-link" href="{{ route('admin.diablero.task.list') }}" title="{{ translate('messages.diablero_tasks') }}">
+                        <i class="tio-shopping-basket-outlined nav-icon"></i>
+                        <span class="navbar-vertical-aside-mini-mode-hidden-elements text-truncate">{{ translate('messages.diablero_tasks') }}</span>
+                    </a>
+                </li>
+                <li class="navbar-vertical-aside-has-menu {{ Request::is('admin/diablero/loading-zone*') ? 'active' : '' }}">
+                    <a class="js-navbar-vertical-aside-menu-link nav-link" href="{{ route('admin.diablero.loading-zone.index') }}" title="{{ translate('messages.loading_zones') }}">
+                        <i class="tio-map nav-icon"></i>
+                        <span class="navbar-vertical-aside-mini-mode-hidden-elements text-truncate">{{ translate('messages.loading_zones') }}</span>
+                    </a>
+                </li>
+                @endif
+                <!-- End Diablero -->
+
                 <!-- Customer Section -->
                 @if (\App\CentralLogics\Helpers::module_permission_check('customer_management'))
                 <li class="nav-item">

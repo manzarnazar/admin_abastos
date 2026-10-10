@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1;
 
 ini_set('memory_limit', '-1');
 
+use App\CentralLogics\DiableroLogic;
 use App\CentralLogics\Helpers;
 use App\CentralLogics\OrderLogic;
 use App\Http\Controllers\Controller;
@@ -23,6 +24,7 @@ use App\Models\DisbursementDetails;
 use App\Models\DisbursementWithdrawalMethod;
 use App\Models\Notification;
 use App\Models\Order;
+use App\Models\OrderGroup;
 use App\Models\OrderPayment;
 use App\Models\OrderTransaction;
 use App\Models\ProvideDMEarning;
@@ -188,7 +190,7 @@ class DeliverymanController extends Controller
             ->orderBy('schedule_at', 'desc')
             ->dmOrder()
             ->get();
-        $orders = Helpers::order_data_formatting($orders, true);
+        $orders = Helpers::order_data_formatting($this->collapse_groups($orders), true);
 
         return response()->json($orders, 200);
     }
@@ -239,7 +241,7 @@ class DeliverymanController extends Controller
             ->whereNull('delivery_man_id')
             ->orderBy('schedule_at', 'desc')
             ->get();
-        $orders = Helpers::order_data_formatting($orders, true);
+        $orders = Helpers::order_data_formatting($this->collapse_groups($orders), true);
 
         return response()->json($orders, 200);
     }
@@ -258,6 +260,9 @@ class DeliverymanController extends Controller
             ->whereNull('delivery_man_id')
             ->dmOrder()
             ->first();
+        if ($order && $order->order_group_id) {
+            return $this->accept_group_order($order, $dm);
+        }
         if (! $order) {
             return response()->json([
                 'errors' => [
@@ -302,15 +307,37 @@ class DeliverymanController extends Controller
             $order->order_status = in_array($order->order_status, ['pending', 'confirmed']) ? 'accepted' : $order->order_status;
         }
 
-        $order->delivery_man_id = $dm->id;
-        $order->accepted = now();
-        $order->save();
+        $affected = DB::transaction(function () use ($order, $dm) {
+            $locked = Order::where('id', $order->id)->whereNull('delivery_man_id')->lockForUpdate()->first();
+            if (! $locked) {
+                return 0;
+            }
+            $order->delivery_man_id = $dm->id;
+            $order->accepted = now();
+            $order->save();
+
+            return 1;
+        });
+        if (! $affected) {
+            return response()->json([
+                'errors' => [
+                    ['code' => 'order', 'message' => translate('messages.can_not_accept')],
+                ],
+            ], 404);
+        }
 
         $dm->current_orders = $dm->current_orders + 1;
         $dm->save();
 
         $dm->increment('assigned_order_count');
 
+        $this->notify_customer_order_accepted($order);
+
+        return response()->json(['message' => 'Order accepted successfully'], 200);
+    }
+
+    private function notify_customer_order_accepted(Order $order): void
+    {
         $fcm_token = $order->is_guest == 0 ? $order?->customer?->cm_firebase_token : $order?->guest?->fcm_token;
 
         $value = Helpers::order_status_update_message('accepted', $order->module->module_type);
@@ -328,8 +355,99 @@ class DeliverymanController extends Controller
             }
         } catch (\Exception $e) {
         }
+    }
 
-        return response()->json(['message' => 'Order accepted successfully'], 200);
+    /**
+     * A diablero group is delivered by a single deliveryman, so every active order of the group is assigned at once.
+     */
+    private function accept_group_order(Order $order, DeliveryMan $dm)
+    {
+        if ($dm->active != 1) {
+            return response()->json(['errors' => [['code' => 'active_status', 'message' => translate('messages.You_can_not_accept_order_on_offline')]]], 404);
+        }
+        if ($dm->current_orders >= config('dm_maximum_orders')) {
+            return response()->json(['errors' => [['code' => 'dm_maximum_order_exceed', 'message' => translate('messages.dm_maximum_order_exceed_warning')]]], 405);
+        }
+
+        $active = Order::where('order_group_id', $order->order_group_id)
+            ->whereNotIn('order_status', ['canceled', 'failed', 'refunded', 'refund_requested', 'delivered'])
+            ->get();
+        $codAmount = $active->where('payment_method', 'cash_on_delivery')->sum('order_amount');
+        $cash_in_hand = $dm?->wallet?->collected_cash ?? 0;
+        $dm_max_cash = BusinessSetting::where('key', 'dm_max_cash_in_hand')->first()?->value ?? 0;
+        if ($codAmount > 0 && ($cash_in_hand + $codAmount) >= $dm_max_cash) {
+            return response()->json(['errors' => [['code' => 'dm_maximum_hand_in_cash', 'message' => Helpers::format_currency($dm_max_cash).' '.translate('max_cash_in_hand_exceeds')]]], 405);
+        }
+
+        $assigned = DB::transaction(function () use ($order, $dm) {
+            $locked = Order::where('order_group_id', $order->order_group_id)
+                ->whereNotIn('order_status', ['canceled', 'failed', 'refunded', 'refund_requested', 'delivered'])
+                ->lockForUpdate()
+                ->get();
+            if ($locked->isEmpty() || $locked->whereNotNull('delivery_man_id')->isNotEmpty()) {
+                return collect();
+            }
+            foreach ($locked as $sibling) {
+                $sibling->order_status = in_array($sibling->order_status, ['pending', 'confirmed']) ? 'accepted' : $sibling->order_status;
+                $sibling->delivery_man_id = $dm->id;
+                $sibling->accepted = now();
+                $sibling->save();
+            }
+
+            return $locked;
+        });
+
+        if ($assigned->isEmpty()) {
+            return response()->json(['errors' => [['code' => 'order', 'message' => translate('messages.can_not_accept')]]], 404);
+        }
+
+        $dm->current_orders = $dm->current_orders + $assigned->count();
+        $dm->save();
+        $dm->increment('assigned_order_count', $assigned->count());
+
+        foreach ($assigned as $sibling) {
+            $this->notify_customer_order_accepted($sibling);
+        }
+        $task = DiableroLogic::taskForOrder($order);
+        if ($task) {
+            DiableroLogic::log($task, $task->status, $task->status, DiableroLogic::ACTOR_DELIVERYMAN, $dm->id, 'deliveryman_assigned');
+        }
+
+        return response()->json(['message' => 'Order accepted successfully', 'order_ids' => $assigned->pluck('id')->values()], 200);
+    }
+
+    public function confirm_diablero_handover(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'order_group_id' => 'required|integer',
+            'code' => 'required|string|max:10',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
+        }
+        $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
+        $group = OrderGroup::find($request->order_group_id);
+        if (! $group) {
+            return response()->json(['errors' => [['code' => 'not_found', 'message' => translate('messages.not_found')]]], 404);
+        }
+
+        [$ok, $code, $message, $status] = DiableroLogic::confirmHandover($group, $dm, (string) $request->code);
+        if (! $ok) {
+            return response()->json(['errors' => [['code' => $code, 'message' => $message]]], $status);
+        }
+
+        return response()->json(['message' => $message], 200);
+    }
+
+    /**
+     * Grouped orders are shown to the deliveryman once, represented by their lowest order id.
+     */
+    private function collapse_groups($orders)
+    {
+        $representatives = $orders->whereNotNull('order_group_id')->groupBy('order_group_id')
+            ->map(fn ($group) => $group->min('id'))->values()->all();
+
+        return $orders->filter(fn ($order) => ! $order->order_group_id || in_array($order->id, $representatives))->values();
     }
 
     public function record_location_data(Request $request)
@@ -465,6 +583,14 @@ class DeliverymanController extends Controller
             ], 403);
         }
 
+        if ($diableroBlock = DiableroLogic::blockedStatusChange($order, $request['status'], DiableroLogic::ACTOR_DELIVERYMAN)) {
+            return response()->json([
+                'errors' => [
+                    ['code' => 'diablero', 'message' => $diableroBlock],
+                ],
+            ], 403);
+        }
+
         if ($request['status'] == 'canceled' && ! config('canceled_by_deliveryman')) {
             return response()->json([
                 'errors' => [
@@ -488,61 +614,31 @@ class DeliverymanController extends Controller
                 ],
             ], 406);
         }
+        $siblings = collect();
+        $images = [];
         if ($request->status == 'delivered') {
-            if ($order->transaction == null) {
-                $unpaid_payment = OrderPayment::where('payment_status', 'unpaid')->where('order_id', $order->id)->first();
-                $pay_method = 'digital_payment';
-                if ($unpaid_payment && $unpaid_payment->payment_method == 'cash_on_delivery') {
-                    $pay_method = 'cash_on_delivery';
-                }
-                $reveived_by = ($order->payment_method == 'cash_on_delivery' || $pay_method == 'cash_on_delivery') ? ($dm->type != 'zone_wise' ? 'store' : 'deliveryman') : 'admin';
-
-                if (OrderLogic::create_transaction($order, $reveived_by, null)) {
-                    $order->payment_status = 'paid';
-                } else {
-                    return response()->json([
-                        'errors' => [
-                            ['code' => 'error', 'message' => translate('messages.faield_to_create_order_transaction')],
-                        ],
-                    ], 406);
-                }
-            }
-            if ($order->transaction) {
-                $order->transaction->update(['delivery_man_id' => $dm->id]);
-            }
-
-            $order->details->each(function ($item, $key) {
-                if ($item->food) {
-                    $item->food->increment('order_count');
-                }
-            });
-            $order?->customer?->increment('order_count');
-
-            $dm->current_orders = $dm->current_orders > 1 ? $dm->current_orders - 1 : 0;
-            $dm->save();
-
-            $dm->increment('order_count');
-            if ($order->store) {
-                $order->store->increment('order_count');
-            }
-            if ($order->parcel_category) {
-                $order->parcel_category->increment('orders_count');
-            }
-
-            $img_names = [];
-            $images = [];
             if (! empty($request->file('order_proof'))) {
                 foreach ($request->order_proof as $img) {
                     $image_name = Helpers::upload('order/', 'png', $img);
-                    array_push($img_names, ['img' => $image_name, 'storage' => Helpers::getDisk()]);
+                    array_push($images, ['img' => $image_name, 'storage' => Helpers::getDisk()]);
                 }
-                $images = $img_names;
-            }
-            if (count($images) > 0) {
-                $order->order_proof = json_encode($images);
             }
 
-            OrderLogic::update_unpaid_order_payment(order_id: $order->id, payment_method: $order->payment_method);
+            if (! $this->apply_delivered($order, $dm, $images)) {
+                return response()->json([
+                    'errors' => [
+                        ['code' => 'error', 'message' => translate('messages.faield_to_create_order_transaction')],
+                    ],
+                ], 406);
+            }
+
+            if ($order->order_group_id) {
+                $siblings = Order::where('order_group_id', $order->order_group_id)
+                    ->where('id', '!=', $order->id)
+                    ->where('delivery_man_id', $dm->id)
+                    ->where('order_status', 'picked_up')
+                    ->get();
+            }
         } elseif ($request->status == 'canceled') {
             if ($order->delivery_man) {
                 $dm = $order->delivery_man;
@@ -561,10 +657,73 @@ class DeliverymanController extends Controller
         $order->order_status = $request['status'];
         $order[$request['status']] = now();
         $order->save();
+        DiableroLogic::syncOrder($order, DiableroLogic::ACTOR_DELIVERYMAN, $dm->id);
 
         Helpers::send_order_notification($order);
 
+        foreach ($siblings as $sibling) {
+            if (! $this->apply_delivered($sibling, $dm, $images)) {
+                info('Diablero group delivery: failed to create transaction for order '.$sibling->id);
+                continue;
+            }
+            $sibling->order_status = 'delivered';
+            $sibling->delivered = now();
+            $sibling->save();
+            Helpers::send_order_notification($sibling);
+        }
+
         return response()->json(['message' => translate('Status updated')], 200);
+    }
+
+    /**
+     * Settles a delivered order. The caller is responsible for setting the status and saving.
+     */
+    private function apply_delivered(Order $order, DeliveryMan $dm, array $images): bool
+    {
+        if ($order->transaction == null) {
+            $unpaid_payment = OrderPayment::where('payment_status', 'unpaid')->where('order_id', $order->id)->first();
+            $pay_method = 'digital_payment';
+            if ($unpaid_payment && $unpaid_payment->payment_method == 'cash_on_delivery') {
+                $pay_method = 'cash_on_delivery';
+            }
+            $reveived_by = ($order->payment_method == 'cash_on_delivery' || $pay_method == 'cash_on_delivery') ? ($dm->type != 'zone_wise' ? 'store' : 'deliveryman') : 'admin';
+
+            if (OrderLogic::create_transaction($order, $reveived_by, null)) {
+                $order->payment_status = 'paid';
+            } else {
+                return false;
+            }
+        }
+        $order->load('transaction');
+        if ($order->transaction) {
+            $order->transaction->update(['delivery_man_id' => $dm->id]);
+        }
+
+        $order->details->each(function ($item, $key) {
+            if ($item->food) {
+                $item->food->increment('order_count');
+            }
+        });
+        $order?->customer?->increment('order_count');
+
+        $dm->current_orders = $dm->current_orders > 1 ? $dm->current_orders - 1 : 0;
+        $dm->save();
+
+        $dm->increment('order_count');
+        if ($order->store) {
+            $order->store->increment('order_count');
+        }
+        if ($order->parcel_category) {
+            $order->parcel_category->increment('orders_count');
+        }
+
+        if (count($images) > 0) {
+            $order->order_proof = json_encode($images);
+        }
+
+        OrderLogic::update_unpaid_order_payment(order_id: $order->id, payment_method: $order->payment_method);
+
+        return true;
     }
 
     public function get_order_details(Request $request)

@@ -189,7 +189,8 @@ class ZoneController extends BaseController
         $paymentData=[
             'cash_on_delivery'=>$request->cash_on_delivery && data_get($cash_on_delivery ,'status') == 1 ? 1 :0,
             'digital_payment'=>$request->digital_payment && data_get($digital_payment ,'status') == 1 ? :0,
-            'offline_payment'=>$request->offline_payment && $offline_payment == 1 ? 1 :0
+            'offline_payment'=>$request->offline_payment && $offline_payment == 1 ? 1 :0,
+            'diablero_status'=>$request->boolean('diablero_status') ? 1 : 0,
         ];
         $data = $this->zoneService->checkModuleDeliveryCharge(moduleData: $request->module_data, selectedModules: $request->module_id);
 

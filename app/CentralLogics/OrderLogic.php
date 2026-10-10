@@ -130,7 +130,7 @@ class OrderLogic
             }
 
 
-            $order_amount = $order->order_amount - $order->additional_charge - $order->extra_packaging_amount - $order->delivery_charge - $order->total_tax_amount - $dm_tips + $flash_admin_discount_amount + $order->coupon_discount_amount + $store_discount_amount + $flash_store_discount_amount + $ref_bonus_amount;
+            $order_amount = $order->order_amount - $order->additional_charge - (float) $order->diablero_fee - $order->extra_packaging_amount - $order->delivery_charge - $order->total_tax_amount - $dm_tips + $flash_admin_discount_amount + $order->coupon_discount_amount + $store_discount_amount + $flash_store_discount_amount + $ref_bonus_amount;
             // comission in delivery charge
             $delivery_charge_comission = BusinessSetting::where('key', 'delivery_charge_comission')->first();
             $delivery_charge_comission_percentage = $delivery_charge_comission ? $delivery_charge_comission->value : 0;
@@ -167,8 +167,13 @@ class OrderLogic
             $dm_commission = $order->original_delivery_charge - $comission_on_actual_delivery_fee;
         }
         $store_amount = $store_amount + $order_amount + $order->total_tax_amount + $order->extra_packaging_amount - $comission_on_store_amount - $store_coupon_discount_subsidy - $flash_store_discount_amount;
+        $diablero_split = $type == 'parcel' ? ['fee' => 0, 'commission' => 0, 'earning' => 0, 'diablero_id' => null] : DiableroLogic::settleOrder($order);
         try {
             OrderTransaction::insert([
+                'diablero_fee' => $diablero_split['fee'],
+                'diablero_fee_commission' => $diablero_split['commission'],
+                'diablero_earning' => $diablero_split['earning'],
+                'diablero_id' => $diablero_split['diablero_id'],
                 'vendor_id' => $type == 'parcel' ? null : $order->store->vendor->id,
                 'delivery_man_id' => $order->delivery_man_id,
                 'order_id' => $order->id,
@@ -202,6 +207,7 @@ class OrderLogic
             );
 
             $adminWallet->total_commission_earning = $adminWallet->total_commission_earning + $comission_amount + $order->additional_charge - $admin_subsidy - $admin_coupon_discount_subsidy - $store_discount_amount - $flash_admin_discount_amount - $ref_bonus_amount;
+            $adminWallet->total_commission_earning = $adminWallet->total_commission_earning + $diablero_split['commission'];
 
             if ($type != 'parcel') {
                 $vendorWallet = StoreWallet::firstOrNew(
@@ -266,6 +272,8 @@ class OrderLogic
                 self::update_unpaid_order_payment(order_id: $order->id, payment_method: $order->payment_method);
 
                 DB::commit();
+
+                DiableroLogic::creditDiablero($order, $diablero_split);
 
                 if ($order->is_guest  == 0) {
                     $ref_status = BusinessSetting::where('key', 'ref_earning_status')->first()->value;
@@ -492,10 +500,11 @@ class OrderLogic
 
         $status = 'refunded_with_delivery_charge';
         if ($order->order_status == 'delivered' || $order->order_status == 'refund_requested') {
-            $refund_amount = $order->order_amount - $order->additional_charge - $order->extra_packaging_amount - $order->delivery_charge - $order->dm_tips;
+            $refund_amount = $order->order_amount - $order->additional_charge - $order->extra_packaging_amount - $order->delivery_charge - $order->dm_tips - (float) $order->diablero_fee;
             $status = 'refunded_without_delivery_charge';
         } else {
             $adminWallet->delivery_charge = $adminWallet->delivery_charge - $order_transaction->delivery_charge;
+            $adminWallet->total_commission_earning = $adminWallet->total_commission_earning - (float) $order_transaction->diablero_fee_commission;
         }
         try {
             DB::beginTransaction();

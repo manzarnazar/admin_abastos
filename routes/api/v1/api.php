@@ -107,6 +107,7 @@ Route::group(['namespace' => 'Api\V1', 'middleware'=>'localization'], function (
             Route::get('order-delivery-history', 'DeliverymanController@get_order_history');
             Route::put('accept-order', 'DeliverymanController@accept_order');
             Route::put('update-order-status', 'DeliverymanController@update_order_status');
+            Route::post('confirm-diablero-handover', 'DeliverymanController@confirm_diablero_handover')->middleware('throttle:10,1');
             Route::put('update-payment-status', 'DeliverymanController@order_payment_status_update');
             Route::get('order-details', 'DeliverymanController@get_order_details');
             Route::get('order', 'DeliverymanController@get_order');
@@ -395,6 +396,8 @@ Route::group(['namespace' => 'Api\V1', 'middleware'=>'localization'], function (
                 Route::get('running-orders', 'OrderController@get_running_orders');
                 Route::get('details', 'OrderController@get_order_details');
                 Route::post('place', 'OrderController@place_order');
+                Route::post('place-group', 'OrderController@place_group_order');
+                Route::get('diablero-summary', 'OrderController@diablero_summary');
                 Route::post('get-Tax', 'OrderController@getTaxFromCart');
                 Route::post('prescription/place', 'OrderController@prescription_place_order');
                 Route::put('cancel', 'OrderController@cancel_order');
