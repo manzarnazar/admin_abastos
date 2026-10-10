@@ -356,7 +356,7 @@ class OrderController extends Controller
 
         }
 
-        $order->order_status = $request->order_status;
+        $order->order_status = \App\CentralLogics\TwoStageDelivery::preserveTwoLegStatus($order, $request->order_status);
         if($request->order_status == 'processing') {
             $order->processing_time = ($request?->processing_time) ? $request->processing_time : explode('-', $order['store']['delivery_time'])[0];
         }

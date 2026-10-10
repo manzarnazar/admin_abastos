@@ -92,6 +92,18 @@
                                 <div class="col-sm-6">
                                     <div class="form-group mb-0">
                                         <label class="input-label"
+                                            for="role">{{ translate('messages.role') }}
+                                            <span class="form-label-secondary text-danger"> *</span>
+                                        </label>
+                                        <select name="role" required class="form-control js-select2-custom">
+                                            <option value="driver">{{ translate('messages.driver') }}</option>
+                                            <option value="diablero">{{ translate('messages.diablero') }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="form-group mb-0">
+                                        <label class="input-label"
                                             for="exampleFormControlInput1">{{ translate('messages.zone') }} <span
                                                 class="form-label-secondary text-danger" data-toggle="tooltip"
                                                 data-placement="right"

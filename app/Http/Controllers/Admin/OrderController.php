@@ -221,6 +221,8 @@ class OrderController extends Controller
             return $query->withCount('orders');
         }, 'delivery_man' => function ($query) {
             return $query->withCount('orders');
+        }, 'diablero' => function ($query) {
+            return $query->withCount('orders');
         }, 'details.item' => function ($query) {
             return $query->withoutGlobalScope(StoreScope::class);
         }, 'details.campaign' => function ($query) {
@@ -237,6 +239,14 @@ class OrderController extends Controller
                             $query->where('vehicle_id',$order->dm_vehicle_id)->orWhereNull('vehicle_id');
                     })
                     ->where('id', '!=', $excludeDm)
+                    ->when($order->requires_diablero && $order->order_status !== 'handed_to_vehicle', function ($q) {
+                        $q->where('role', 'diablero');
+                    })
+                    ->when($order->requires_diablero && $order->order_status === 'handed_to_vehicle', function ($q) {
+                        $q->where(function ($inner) {
+                            $inner->where('role', 'driver')->orWhereNull('role');
+                        });
+                    })
                     ->available()
                     ->active()
                     ->get();
@@ -565,7 +575,7 @@ class OrderController extends Controller
         } else if ( $order->order_type != 'parcel' && in_array($request->order_status, ['picked_up']) ) {
             Helpers::sendOrderDeliveryVerificationOtp($order);
         }
-        $order->order_status = $request->order_status;
+        $order->order_status = \App\CentralLogics\TwoStageDelivery::preserveTwoLegStatus($order, $request->order_status);
         if($request->order_status == 'processing') {
             $order->processing_time = ($request?->processing_time) ? $request->processing_time : explode('-', $order['store']['delivery_time'])[0];
         }
@@ -588,7 +598,20 @@ class OrderController extends Controller
         $order = Order::withOutGlobalScope(ZoneScope::class)->find($order_id);
 
         $deliveryman = DeliveryMan::where('id', $delivery_man_id)->available()->active()->first();
-        if ($order->delivery_man_id == $delivery_man_id) {
+        $assignDiablero = $order->requires_diablero && $order->order_status !== 'handed_to_vehicle';
+        $assignDriver = $order->requires_diablero && $order->order_status === 'handed_to_vehicle';
+        if ($order->requires_diablero) {
+            if ($assignDiablero && ($deliveryman->role ?? 'driver') !== 'diablero') {
+                return response()->json(['message'=> translate('messages.deliveryman_not_found')  ], 400);
+            }
+            if ($assignDriver && ($deliveryman->role ?? 'driver') === 'diablero') {
+                return response()->json(['message'=> translate('messages.deliveryman_not_found')  ], 400);
+            }
+            if ($assignDiablero && $order->diablero_id == $delivery_man_id) {
+                return response()->json(['message'=> translate('messages.order_already_assign_to_this_deliveryman')  ], 400);
+            }
+        }
+        if (! $assignDiablero && $order->delivery_man_id == $delivery_man_id) {
             return response()->json(['message'=> translate('messages.order_already_assign_to_this_deliveryman')  ], 400);
         }
         if ($deliveryman) {
@@ -601,10 +624,16 @@ class OrderController extends Controller
             $dm_max_cash=BusinessSetting::where('key','dm_max_cash_in_hand')->first();
             $value=  $dm_max_cash?->value ?? 0;
 
-            if(($order->payment_method == "cash_on_delivery" || $payments) && (($cash_in_hand+$order->order_amount) >= $value)){
+            if(!$assignDiablero && ($order->payment_method == "cash_on_delivery" || $payments) && (($cash_in_hand+$order->order_amount) >= $value)){
                 return response()->json(['message'=> \App\CentralLogics\Helpers::format_currency($value) ." ".translate('max_cash_in_hand_exceeds')  ], 400);
             }
 
+            if ($assignDiablero) {
+                $order->diablero_id = $delivery_man_id;
+                $order->order_status = 'diablero_assigned';
+                $order->diablero_assigned = now();
+                $order->save();
+            } else {
             if ($order->delivery_man) {
                 $dm = $order->delivery_man;
                 $dm->current_orders = $dm->current_orders > 1 ? $dm->current_orders - 1 : 0;
@@ -629,9 +658,15 @@ class OrderController extends Controller
 
             }
             $order->delivery_man_id = $delivery_man_id;
-            $order->order_status = in_array($order->order_status, ['pending', 'confirmed']) ? 'accepted' : $order->order_status;
-            $order->accepted = now();
+            if ($order->requires_diablero) {
+                $order->order_status = 'delivery_man_assigned';
+                $order->delivery_man_assigned = now();
+            } else {
+                $order->order_status = in_array($order->order_status, ['pending', 'confirmed']) ? 'accepted' : $order->order_status;
+                $order->accepted = now();
+            }
             $order->save();
+            }
 
             $deliveryman->current_orders = $deliveryman->current_orders + 1;
             $deliveryman->save();
@@ -642,7 +677,7 @@ class OrderController extends Controller
             $order?->customer?->current_language_key:'en');
             $value = Helpers::text_variable_data_format(value:$value,store_name:$order->store?->name,order_id:$order->id,user_name:"{$order?->customer?->f_name} {$order?->customer?->l_name}",delivery_man_name:"{$order->delivery_man?->f_name} {$order->delivery_man?->l_name}");
             try {
-                if ($value  && Helpers::getNotificationStatusData('customer','customer_order_notification','push_notification_status') && $fcm_token ) {
+                if (! $assignDiablero && $value  && Helpers::getNotificationStatusData('customer','customer_order_notification','push_notification_status') && $fcm_token ) {
                     $data = [
                         'title' => translate('Order_Notification'),
                         'description' => $value,

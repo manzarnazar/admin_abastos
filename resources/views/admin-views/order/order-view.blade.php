@@ -1283,7 +1283,11 @@
                                         </div>
                                     </div>
                                 @endif
-                                @if (!in_array($order->order_status, [ 'refunded','delivered', 'canceled']) &&  ( !$order->delivery_man && $order['order_type'] != 'take_away' && (($order->store && !$order?->store?->sub_self_delivery))))
+                                @if (!in_array($order->order_status, [ 'refunded','delivered', 'canceled']) &&  $order['order_type'] != 'take_away' && (($order->store && !$order?->store?->sub_self_delivery)) && (
+                                    (! $order->requires_diablero && ! $order->delivery_man)
+                                    || ($order->requires_diablero && ! $order->diablero_id)
+                                    || ($order->requires_diablero && $order->order_status == 'handed_to_vehicle' && ! $order->delivery_man)
+                                ))
                                     <div class="w-100 text-center mt-3">
                                         <button type="button" class="btn btn--primary w-100" data-toggle="modal"
                                                 data-target="#myModal" data-lat='21.03' data-lng='105.85'>
@@ -1296,7 +1300,69 @@
                     </div>
                 @endif
 
-                    @if ($order->delivery_man && $order['order_type'] != 'take_away' && $order->store)
+                    @if ($order->requires_diablero && $order['order_type'] != 'take_away' && $order->store)
+                        @foreach([
+                            ['actor' => $order->diablero, 'label' => translate('messages.diablero'), 'location' => $order->diablero_last_location, 'times' => [
+                                translate('messages.diablero_assigned') => $order->diablero_assigned,
+                                translate('messages.diablero_picked_up') => $order->diablero_picked_up,
+                                translate('messages.handed_to_vehicle') => $order->handed_to_vehicle,
+                            ]],
+                            ['actor' => $order->delivery_man, 'label' => translate('messages.deliveryman'), 'location' => $order->dm_last_location, 'times' => [
+                                translate('messages.delivery_man_assigned') => $order->delivery_man_assigned,
+                                translate('messages.out_for_delivery') => $order->out_for_delivery,
+                                translate('messages.delivered') => $order->delivered,
+                            ]],
+                        ] as $leg)
+                        <div class="card mt-2">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3 d-flex flex-wrap align-items-center">
+                                    <span class="card-header-icon"><i class="tio-user"></i></span>
+                                    <span>{{ $leg['label'] }}</span>
+                                </h5>
+                                @if ($leg['actor'])
+                                <a class="media align-items-center deco-none customer--information-single"
+                                   href="{{ route('admin.users.delivery-man.preview', [$leg['actor']['id']]) }}">
+                                    <div class="avatar avatar-circle">
+                                        <img class="avatar-img onerror-image"
+                                             data-onerror-image="{{ asset('public/assets/admin/img/160x160/img1.jpg') }}"
+                                             src="{{ $leg['actor']?->image_full_url ?? asset('public/assets/admin/img/160x160/img1.jpg') }}"
+                                             alt="Image Description">
+                                    </div>
+                                    <div class="media-body">
+                                        <span class="text-body d-block text-hover-primary mb-1">{{ $leg['actor']['f_name'] . ' ' . $leg['actor']['l_name'] }}</span>
+                                        <span class="text--title font-semibold d-flex align-items-center">
+                                            <i class="tio-call-talking-quiet mr-2"></i>
+                                            {{ $leg['actor']['phone'] }}
+                                        </span>
+                                    </div>
+                                </a>
+                                <hr>
+                                @foreach($leg['times'] as $timeLabel => $timeValue)
+                                    @if($timeValue)
+                                        <div class="d-flex justify-content-between"><span>{{ $timeLabel }}</span><span>{{ $timeValue }}</span></div>
+                                    @endif
+                                @endforeach
+                                @php($address = $leg['location'])
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <h5>{{ translate('messages.last_location') }}</h5>
+                                </div>
+                                @if (isset($address))
+                                    <span class="d-block">
+                                        <a target="_blank"
+                                           href="http://maps.google.com/maps?z=12&t=m&q=loc:{{ $address['latitude'] }}+{{ $address['longitude'] }}">
+                                            <i class="tio-map"></i> {{ $address['location'] }}<br>
+                                        </a>
+                                    </span>
+                                @else
+                                    <span class="d-block text-lowercase qcont">{{ translate('messages.location_not_found') }}</span>
+                                @endif
+                                @else
+                                    <span class="text-muted">{{ translate('messages.searching_for_deliverymen') }}</span>
+                                @endif
+                            </div>
+                        </div>
+                        @endforeach
+                    @elseif ($order->delivery_man && $order['order_type'] != 'take_away' && $order->store)
                         <div class="card mt-2">
                             <div class="card-body">
                                 <h5 class="card-title mb-3 d-flex flex-wrap align-items-center">

@@ -186,6 +186,9 @@ class DeliveryManRepository implements DeliveryManRepositoryInterface
             ->when(isset($jobType) && $jobType == 'salary_base', function($query){
                 return $query->Zonewise()->where('earning',0)->where('application_status','approved');
             })
+            ->when(request('role') && in_array(request('role'), ['driver', 'diablero'], true), function($query){
+                return $query->where('role', request('role'));
+            })
             ->when(isset($key), function($query) use($key){
                 $query->where(function ($query) use ($key) {
                     foreach ($key as $value) {

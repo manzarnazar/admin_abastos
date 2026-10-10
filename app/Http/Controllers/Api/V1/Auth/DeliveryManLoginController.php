@@ -64,6 +64,10 @@ class DeliveryManLoginController extends Controller
                 }
                 $zone_topic =  $delivery_man->type=='zone_wise'?$delivery_man->zone->deliveryman_wise_topic.'_push':'';
             }
+            if (($delivery_man->role ?? 'driver') === 'diablero' && $delivery_man->type == 'zone_wise' && $delivery_man->zone_id) {
+                $topic = \App\CentralLogics\TwoStageDelivery::diableroTopic($delivery_man->zone_id);
+                $zone_topic = $topic.'_push';
+            }
             return response()->json(['token' => $token, 'topic'=> isset($topic)?$topic:'No_topic_found', 'zone_topic' =>  $zone_topic?? ''], 200);
         } else {
             $errors = [];

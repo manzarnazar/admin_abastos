@@ -249,11 +249,11 @@ class VendorController extends Controller
         ->where(function($query)use($vendor){
             if(config('order_confirmation_model') == 'store' || $vendor->stores[0]->sub_self_delivery)
             {
-                $query->whereIn('order_status', ['accepted','pending','confirmed', 'processing', 'handover','picked_up']);
+                $query->whereIn('order_status', ['accepted','pending','confirmed', 'processing', 'handover','picked_up','diablero_assigned','diablero_picked_up','handed_to_vehicle','delivery_man_assigned','out_for_delivery']);
             }
             else
             {
-                $query->whereIn('order_status', ['confirmed', 'processing', 'handover','picked_up'])
+                $query->whereIn('order_status', ['confirmed', 'processing', 'handover','picked_up','diablero_assigned','diablero_picked_up','handed_to_vehicle','delivery_man_assigned','out_for_delivery'])
                 ->orWhere(function($query){
                     $query->whereNotNull('confirmed')->where('order_status', 'accepted');
                 })
@@ -485,7 +485,7 @@ class VendorController extends Controller
             Helpers::sendOrderDeliveryVerificationOtp($order);
         }
 
-        $order->order_status = $request['status'];
+        $order->order_status = \App\CentralLogics\TwoStageDelivery::preserveTwoLegStatus($order, $request['status']);
         if($order->order_status == 'processing') {
             $order->processing_time = ($request?->processing_time) ? $request->processing_time : explode('-', $order['store']['delivery_time'])[0];
         }
@@ -1225,11 +1225,11 @@ class VendorController extends Controller
         ->where(function($query)use($vendor){
             if(config('order_confirmation_model') == 'store' || $vendor->stores[0]->sub_self_delivery)
             {
-                $query->whereIn('order_status', ['accepted','pending','confirmed', 'processing', 'handover','picked_up']);
+                $query->whereIn('order_status', ['accepted','pending','confirmed', 'processing', 'handover','picked_up','diablero_assigned','diablero_picked_up','handed_to_vehicle','delivery_man_assigned','out_for_delivery']);
             }
             else
             {
-                $query->whereIn('order_status', ['confirmed', 'processing', 'handover','picked_up'])
+                $query->whereIn('order_status', ['confirmed', 'processing', 'handover','picked_up','diablero_assigned','diablero_picked_up','handed_to_vehicle','delivery_man_assigned','out_for_delivery'])
                 ->orWhere(function($query){
                     $query->where('payment_status','paid')->where('order_status', 'accepted');
                 })
