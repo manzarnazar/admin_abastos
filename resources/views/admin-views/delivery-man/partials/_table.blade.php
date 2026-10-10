@@ -27,9 +27,6 @@
         @endif
     </td>
     <td>
-        <label class="text--title font-medium mb-0 text-capitalize">{{ translate('messages.'.($dm->role ?? 'driver')) }}</label>
-    </td>
-    <td>
         <a class="deco-none">{{count($dm['orders'])}}</a>
     </td>
     <td>

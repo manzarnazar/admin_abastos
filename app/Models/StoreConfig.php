@@ -29,7 +29,6 @@ class StoreConfig extends Model
         'halal_tag_status' => 'boolean',
         'extra_packaging_status' => 'boolean',
         'extra_packaging_amount' => 'float',
-        'requires_diablero' => 'boolean',
     ];
 
     public function Store()

@@ -182,15 +182,8 @@ class DeliverymanController extends Controller
     {
         $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
         $orders = Order::with(['customer', 'store', 'parcel_category'])
-            ->whereIn('order_status', [
-                'accepted', 'confirmed', 'pending', 'processing', 'picked_up', 'handover',
-                'diablero_assigned', 'diablero_picked_up', 'handed_to_vehicle',
-                'delivery_man_assigned', 'out_for_delivery',
-            ])
-            ->where(function ($query) use ($dm) {
-                $query->where('delivery_man_id', $dm['id'])
-                    ->orWhere('diablero_id', $dm['id']);
-            })
+            ->whereIn('order_status', ['accepted', 'confirmed', 'pending', 'processing', 'picked_up', 'handover'])
+            ->where(['delivery_man_id' => $dm['id']])
             ->orderBy('accepted')
             ->orderBy('schedule_at', 'desc')
             ->dmOrder()
@@ -226,62 +219,26 @@ class DeliverymanController extends Controller
             $orders = $orders->where('store_id', $dm->store_id);
         }
 
-        $isDiablero = ($dm->role ?? 'driver') === 'diablero';
-
-        if ($isDiablero) {
-            $orders = $orders->whereIn('order_status', ['confirmed', 'processing', 'handover']);
-        } elseif (config('order_confirmation_model') == 'deliveryman' && $dm->type == 'zone_wise') {
-            $orders = $orders->whereIn('order_status', ['pending', 'confirmed', 'processing', 'handover', 'handed_to_vehicle']);
+        if (config('order_confirmation_model') == 'deliveryman' && $dm->type == 'zone_wise') {
+            $orders = $orders->whereIn('order_status', ['pending', 'confirmed', 'processing', 'handover']);
         } else {
             $orders = $orders->where(function ($query) {
-                return $query->whereIn('order_status', ['confirmed', 'processing', 'handover', 'handed_to_vehicle'])
+                return $query->whereIn('order_status', ['confirmed', 'processing', 'handover'])
                     ->orWhere(function ($subQuery) {
                         return $subQuery->where('order_type', 'parcel')->whereIn('order_status', ['pending', 'confirmed', 'processing', 'handover']);
                     });
             });
         }
-
-        if ($isDiablero) {
-            $orders = $orders->where('requires_diablero', 1)
-                ->whereNull('diablero_id')
-                ->whereIn('order_status', ['confirmed', 'processing', 'handover']);
-        } else {
-            if (isset($dm->vehicle_id)) {
-                $orders = $orders->where('dm_vehicle_id', $dm->vehicle_id);
-            }
-            $orders = $orders->where(function ($query) {
-                $query->where(function ($single) {
-                    $single->where(function ($flag) {
-                        $flag->where('requires_diablero', 0)->orWhereNull('requires_diablero');
-                    })->whereNull('delivery_man_id');
-                })->orWhere(function ($leg2) {
-                    $leg2->where('requires_diablero', 1)
-                        ->where('order_status', 'handed_to_vehicle')
-                        ->whereNull('delivery_man_id');
-                });
-            });
+        if (isset($dm->vehicle_id)) {
+            $orders = $orders->where('dm_vehicle_id', $dm->vehicle_id);
         }
-
         $orders = $orders->dmOrder()
             ->Notpos()
             ->NotDigitalOrder()
-            ->OrderScheduledIn(30);
-
-        if ($isDiablero) {
-            $orders = $orders->orderBy('schedule_at', 'desc')->get();
-        } else {
-            $lastLocation = \App\CentralLogics\TwoStageDelivery::lastLocation($dm->id);
-            if ($lastLocation && $lastLocation->latitude && $lastLocation->longitude) {
-                $lat = (float) $lastLocation->latitude;
-                $lng = (float) $lastLocation->longitude;
-                $orders = $orders->orderByRaw(
-                    'CASE WHEN requires_diablero = 1 AND order_status = ? AND handoff_latitude IS NOT NULL THEN (6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(handoff_latitude)) * cos(radians(handoff_longitude) - radians(?)) + sin(radians(?)) * sin(radians(handoff_latitude))))) ELSE 0 END',
-                    ['handed_to_vehicle', $lat, $lng, $lat]
-                )->orderBy('schedule_at', 'desc')->get();
-            } else {
-                $orders = $orders->orderBy('schedule_at', 'desc')->get();
-            }
-        }
+            ->OrderScheduledIn(30)
+            ->whereNull('delivery_man_id')
+            ->orderBy('schedule_at', 'desc')
+            ->get();
         $orders = Helpers::order_data_formatting($orders, true);
 
         return response()->json($orders, 200);
@@ -296,28 +253,12 @@ class DeliverymanController extends Controller
             return response()->json(['errors' => Helpers::error_processor($validator)], 403);
         }
         $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
-        $isDiablero = ($dm->role ?? 'driver') === 'diablero';
-        $orderQuery = Order::where('id', $request['order_id'])->dmOrder();
-        if ($isDiablero) {
-            $order = $orderQuery->where('requires_diablero', 1)->whereNull('diablero_id')->first();
-        } else {
-            $order = $orderQuery->whereNull('delivery_man_id')->first();
-        }
+        $order = Order::where('id', $request['order_id'])
+            // ->whereIn('order_status', ['pending', 'confirmed'])
+            ->whereNull('delivery_man_id')
+            ->dmOrder()
+            ->first();
         if (! $order) {
-            return response()->json([
-                'errors' => [
-                    ['code' => 'order', 'message' => translate('messages.can_not_accept')],
-                ],
-            ], 404);
-        }
-        if ($isDiablero && ! $order->requires_diablero) {
-            return response()->json([
-                'errors' => [
-                    ['code' => 'order', 'message' => translate('messages.can_not_accept')],
-                ],
-            ], 404);
-        }
-        if (! $isDiablero && $order->requires_diablero && $order->order_status !== 'handed_to_vehicle') {
             return response()->json([
                 'errors' => [
                     ['code' => 'order', 'message' => translate('messages.can_not_accept')],
@@ -344,7 +285,7 @@ class DeliverymanController extends Controller
         $dm_max_cash = BusinessSetting::where('key', 'dm_max_cash_in_hand')->first();
         $value = $dm_max_cash?->value ?? 0;
 
-        if (! $isDiablero && ($order->payment_method == 'cash_on_delivery' || $payments) && (($cash_in_hand + $order->order_amount) >= $value)) {
+        if (($order->payment_method == 'cash_on_delivery' || $payments) && (($cash_in_hand + $order->order_amount) >= $value)) {
 
             return response()->json([
                 'errors' => [
@@ -353,26 +294,16 @@ class DeliverymanController extends Controller
             ], 405);
         }
 
-        if ($isDiablero) {
-            $order->diablero_id = $dm->id;
-            $order->order_status = 'diablero_assigned';
-            $order->diablero_assigned = now();
-        } elseif ($order->requires_diablero && $order->order_status === 'handed_to_vehicle') {
-            $order->delivery_man_id = $dm->id;
-            $order->order_status = 'delivery_man_assigned';
-            $order->delivery_man_assigned = now();
-        } elseif ($order->order_type == 'parcel' && $order->order_status == 'confirmed') {
+        if ($order->order_type == 'parcel' && $order->order_status == 'confirmed') {
             $order->order_status = 'handover';
             $order->handover = now();
             $order->processing = now();
-            $order->delivery_man_id = $dm->id;
-            $order->accepted = now();
         } else {
             $order->order_status = in_array($order->order_status, ['pending', 'confirmed']) ? 'accepted' : $order->order_status;
-            $order->delivery_man_id = $dm->id;
-            $order->accepted = now();
         }
 
+        $order->delivery_man_id = $dm->id;
+        $order->accepted = now();
         $order->save();
 
         $dm->current_orders = $dm->current_orders + 1;
@@ -380,7 +311,6 @@ class DeliverymanController extends Controller
 
         $dm->increment('assigned_order_count');
 
-        if (! $isDiablero) {
         $fcm_token = $order->is_guest == 0 ? $order?->customer?->cm_firebase_token : $order?->guest?->fcm_token;
 
         $value = Helpers::order_status_update_message('accepted', $order->module->module_type);
@@ -397,7 +327,6 @@ class DeliverymanController extends Controller
                 Helpers::send_push_notif_to_device($fcm_token, $data);
             }
         } catch (\Exception $e) {
-        }
         }
 
         return response()->json(['message' => 'Order accepted successfully'], 200);
@@ -491,7 +420,7 @@ class DeliverymanController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'order_id' => 'required',
-            'status' => 'required|in:confirmed,canceled,picked_up,delivered,handover,diablero_picked_up,handed_to_vehicle,out_for_delivery',
+            'status' => 'required|in:confirmed,canceled,picked_up,delivered,handover',
             'reason' => 'required_if:status,canceled',
             'order_proof' => 'array|max:5',
         ]);
@@ -505,9 +434,7 @@ class DeliverymanController extends Controller
         }
         $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
 
-        $order = Order::where('id', $request['order_id'])->where(function ($query) use ($dm) {
-            $query->where('delivery_man_id', $dm['id'])->orWhere('diablero_id', $dm['id']);
-        })->dmOrder()->first();
+        $order = Order::where(['id' => $request['order_id'], 'delivery_man_id' => $dm['id']])->dmOrder()->first();
 
         if (! $order || (! $order->store && $order->order_type != 'parcel')) {
             return response()->json([
@@ -550,37 +477,6 @@ class DeliverymanController extends Controller
             return response()->json([
                 'errors' => [
                     ['code' => 'delivery-man', 'message' => translate('messages.order_can_not_cancle_after_confirm')],
-                ],
-            ], 403);
-        }
-
-        $isDiablero = ($dm->role ?? 'driver') === 'diablero';
-        if ($order->requires_diablero) {
-            if ($isDiablero && ! in_array($request['status'], ['diablero_picked_up', 'handed_to_vehicle', 'canceled'], true)) {
-                return response()->json([
-                    'errors' => [
-                        ['code' => 'status', 'message' => translate('messages.you_can_not_change_the_status_of_this_order')],
-                    ],
-                ], 403);
-            }
-            if (! $isDiablero && in_array($request['status'], ['diablero_picked_up', 'handed_to_vehicle', 'picked_up'], true)) {
-                return response()->json([
-                    'errors' => [
-                        ['code' => 'status', 'message' => translate('messages.you_can_not_change_the_status_of_this_order')],
-                    ],
-                ], 403);
-            }
-            if ($request['status'] == 'diablero_picked_up' && $order->order_status !== 'handover' && $order->handover == null) {
-                return response()->json([
-                    'errors' => [
-                        ['code' => 'status', 'message' => translate('messages.you_can_not_change_the_status_of_this_order')],
-                    ],
-                ], 403);
-            }
-        } elseif (in_array($request['status'], ['diablero_picked_up', 'handed_to_vehicle', 'out_for_delivery'], true)) {
-            return response()->json([
-                'errors' => [
-                    ['code' => 'status', 'message' => translate('messages.you_can_not_change_the_status_of_this_order')],
                 ],
             ], 403);
         }
@@ -658,13 +554,7 @@ class DeliverymanController extends Controller
         } elseif ($order->order_type == 'parcel' && $request->status == 'handover') {
             $order->confirmed = now();
             $order->processing = now();
-        } elseif ($request->status == 'handed_to_vehicle') {
-            $loc = \App\CentralLogics\TwoStageDelivery::lastLocation($dm->id);
-            $order->handoff_latitude = $request->latitude ?? $loc?->latitude;
-            $order->handoff_longitude = $request->longitude ?? $loc?->longitude;
-            $dm->current_orders = $dm->current_orders > 1 ? $dm->current_orders - 1 : 0;
-            $dm->save();
-        } elseif ($order->order_type != 'parcel' && in_array($request->status, ['picked_up', 'out_for_delivery'])) {
+        } elseif ($order->order_type != 'parcel' && in_array($request->status, ['picked_up'])) {
             Helpers::sendOrderDeliveryVerificationOtp($order);
         }
 
@@ -673,9 +563,6 @@ class DeliverymanController extends Controller
         $order->save();
 
         Helpers::send_order_notification($order);
-        if ($request['status'] == 'handed_to_vehicle') {
-            \App\CentralLogics\TwoStageDelivery::notifyRole($order->fresh(['zone']), 'driver');
-        }
 
         return response()->json(['message' => translate('Status updated')], 200);
     }
@@ -693,9 +580,7 @@ class DeliverymanController extends Controller
         $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
         $order = Order::with(['details'])->where('id', $request['order_id'])->where(function ($query) use ($dm) {
             $query->WhereNull('delivery_man_id')
-                ->orWhere('delivery_man_id', $dm['id'])
-                ->orWhere('diablero_id', $dm['id'])
-                ->orWhereNull('diablero_id');
+                ->orWhere('delivery_man_id', $dm['id']);
         })->Notpos()->first();
         if (! $order) {
             return response()->json([
@@ -736,9 +621,7 @@ class DeliverymanController extends Controller
         }
         $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
 
-        $order = Order::with(['customer', 'store', 'details', 'parcel_category', 'payments', 'ParcelCancellation'])->where('id', $request['order_id'])->where(function ($query) use ($dm) {
-            $query->where('delivery_man_id', $dm['id'])->orWhere('diablero_id', $dm['id']);
-        })->Notpos()->first();
+        $order = Order::with(['customer', 'store', 'details', 'parcel_category', 'payments', 'ParcelCancellation'])->where(['delivery_man_id' => $dm['id'], 'id' => $request['order_id']])->Notpos()->first();
         if (! $order) {
             return response()->json([
                 'errors' => [
@@ -764,9 +647,7 @@ class DeliverymanController extends Controller
         $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
 
         $paginator = Order::with(['customer', 'store', 'parcel_category'])
-            ->where(function ($query) use ($dm) {
-                $query->where('delivery_man_id', $dm['id'])->orWhere('diablero_id', $dm['id']);
-            })
+            ->where(['delivery_man_id' => $dm['id']])
             ->whereIn('order_status', ['delivered', 'canceled', 'refund_requested', 'refunded', 'failed'])
             ->orderBy('schedule_at', 'desc')
             ->dmOrder()

@@ -45,7 +45,6 @@ class DeliveryManUpdateRequest extends FormRequest
             'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:delivery_men,phone,'.$this->id,
             'vehicle_id' => 'required',
             'earning' => 'required',
-            'role' => 'nullable|in:driver,diablero',
             'password' => ['nullable', 'min:8', 'regex:/^(?=.*[A-Z])(?=.*\d).{8,}$/',
                 function ($attribute, $value, $fail) {
                     if (strpos($value, ' ') !== false) {

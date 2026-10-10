@@ -60,7 +60,6 @@ class Zone extends Model
         'increased_delivery_fee_status',
         'increase_delivery_charge_message',
         'offline_payment',
-        'requires_diablero',
     ];
 
     protected $casts = [
@@ -72,7 +71,6 @@ class Zone extends Model
         'offline_payment' => 'boolean',
         'fixed_shipping_charge' => 'float',
         'coordinates' => Polygon::class,
-        'requires_diablero' => 'boolean',
     ];
 
     public function translations(): MorphMany

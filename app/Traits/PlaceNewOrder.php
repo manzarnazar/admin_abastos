@@ -210,7 +210,6 @@ trait PlaceNewOrder
                 $order->confirmed = now();
             }
             $order->dm_vehicle_id = $vehicle_id;
-            \App\CentralLogics\TwoStageDelivery::applyToOrder($order, $store, $zone);
             $order->pending = now();
             if (!empty($request->file('order_attachment')) && is_array($request->file('order_attachment'))) {
                 $img_names = [];
