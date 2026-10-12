@@ -2619,9 +2619,70 @@ class Helpers
 
     public static function auto_translator($q, $sl, $tl)
     {
-        $res = file_get_contents("https://translate.googleapis.com/translate_a/single?client=gtx&ie=UTF-8&oe=UTF-8&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&dt=t&dt=at&sl=" . $sl . "&tl=" . $tl . "&hl=hl&q=" . urlencode($q), $_SERVER['DOCUMENT_ROOT'] . "/transes.html");
-        $res = json_decode($res);
-        return str_replace('_', ' ', $res[0][0][0]);
+        $q = trim((string) $q);
+        if ($q === '') {
+            return '';
+        }
+
+        // Google free endpoint expects base codes (es), not regional (es-MX)
+        $sl = strtolower(explode('-', (string) $sl)[0]);
+        $tl = strtolower(explode('-', (string) $tl)[0]);
+
+        $url = 'https://translate.googleapis.com/translate_a/single?client=gtx&ie=UTF-8&oe=UTF-8&dt=t'
+            . '&sl=' . urlencode($sl)
+            . '&tl=' . urlencode($tl)
+            . '&q=' . urlencode($q);
+
+        $attempts = 4;
+        $lastError = null;
+
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_CONNECTTIMEOUT => 10,
+                CURLOPT_TIMEOUT => 20,
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_HTTPHEADER => [
+                    'Accept: application/json',
+                    'User-Agent: Mozilla/5.0 (compatible; AbastosTranslate/1.0)',
+                ],
+            ]);
+
+            $body = curl_exec($ch);
+            $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($body === false || $curlError) {
+                $lastError = $curlError ?: 'Translation request failed';
+            } elseif ($httpCode === 429) {
+                $lastError = 'Too Many Requests';
+                usleep(500000 * $attempt); // 0.5s, 1s, 1.5s, 2s
+                continue;
+            } elseif ($httpCode >= 400) {
+                $lastError = 'Translation HTTP ' . $httpCode;
+            } else {
+                $decoded = json_decode($body, true);
+                if (isset($decoded[0]) && is_array($decoded[0])) {
+                    $translated = '';
+                    foreach ($decoded[0] as $segment) {
+                        if (isset($segment[0]) && is_string($segment[0])) {
+                            $translated .= $segment[0];
+                        }
+                    }
+                    if ($translated !== '') {
+                        return str_replace('_', ' ', $translated);
+                    }
+                }
+                $lastError = 'Invalid translation response';
+            }
+
+            usleep(300000 * $attempt);
+        }
+
+        throw new \RuntimeException($lastError ?: 'Translation failed');
     }
 
     public static function getLanguageCode(string $country_code): string

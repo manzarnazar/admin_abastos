@@ -225,6 +225,12 @@
                 toastr.success('{{translate('Key translated successfully')}}');
                 $('#value-'+id).val(response.translated_data);
             },
+            error: function (xhr) {
+                let message = (xhr.responseJSON && xhr.responseJSON.message)
+                    ? xhr.responseJSON.message
+                    : '{{translate('Too Many Requests')}}';
+                toastr.error(message);
+            },
             complete: function () {
                 $('#loading').hide();
             },
@@ -304,7 +310,7 @@
                 if(response.data === 'data_prepared'){
                     $('#translating-modal').modal('show')
                     $('#translating-count').val(response.total)
-                    auto_translate_all();
+                    setTimeout(auto_translate_all, 800);
                 } else if(response.data === 'translating' &&  response.status === 'pending' ){
                     if($('#translating-count').val() == 0  ){
                         $('#translating-count').val(response.total)
@@ -324,7 +330,7 @@
                             $('#time-data').html(response.seconds + ' {{ translate('seconds') }}');
                         }
 
-                    auto_translate_all();
+                    setTimeout(auto_translate_all, 1200);
 
                     $('#translating-modal').modal('show')
                     } else if((response.data === 'translating' &&  response.status === 'done') || response.data === 'success' || response.data === 'error'  ){

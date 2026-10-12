@@ -241,28 +241,32 @@ class LanguageController extends Controller
 
     public function auto_translate(Request $request, $lang): \Illuminate\Http\JsonResponse
     {
-        $lang_code = Helpers::getLanguageCode($lang);
+        try {
+            $full_data = include(base_path('resources/lang/' . $lang . '/messages.php'));
+            $data_filtered = [];
+            foreach ($full_data as $key => $data) {
+                $data_filtered[$key] = $data;
+            }
+            $translated = str_replace('_', ' ', Helpers::remove_invalid_charcaters($request['key']));
+            $translated = Helpers::auto_translator($translated, 'en', $lang);
+            $data_filtered[$request['key']] = $translated;
+            $str = "<?php return " . var_export($data_filtered, true) . ";";
+            file_put_contents(base_path('resources/lang/' . $lang . '/messages.php'), $str);
 
-        $full_data = include(base_path('resources/lang/' . $lang . '/messages.php'));
-        $data_filtered = [];
-        foreach ($full_data as $key => $data) {
-            $data_filtered[$key] = $data;
+            return response()->json([
+                'translated_data' => $translated
+            ]);
+        } catch (\Exception $exception) {
+            return response()->json([
+                'message' => $exception->getMessage(),
+                'translated_data' => null,
+            ], 429);
         }
-        $translated=  str_replace('_', ' ', Helpers::remove_invalid_charcaters($request['key']));
-        $translated = Helpers::auto_translator($translated, 'en', $lang);
-        $data_filtered[$request['key']] = $translated;
-        $str = "<?php return " . var_export($data_filtered, true) . ";";
-        file_put_contents(base_path('resources/lang/' . $lang . '/messages.php'), $str);
-
-        return response()->json([
-            'translated_data' => $translated
-        ]);
     }
     public function auto_translate_all(Request $request, $lang): \Illuminate\Http\JsonResponse
     {
         try {
             $translating_count= $request?->translating_count <= 0 ? 1: $request->translating_count ;
-            $lang_code = Helpers::getLanguageCode($lang);
 
             if($lang === 'en'){
                 return response()->json([
@@ -275,7 +279,8 @@ class LanguageController extends Controller
             $new_messages_path = base_path('resources/lang/' . $lang . '/new-messages.php');
             $count=0;
             $start_time = now();
-            $items_processed = 20;
+            // Smaller batches + delay avoid Google free-endpoint 429 rate limits
+            $items_processed = 5;
             if(!file_exists($new_messages_path)){
                 $str = "<?php return " . var_export($data_filtered, true) . ";";
                 file_put_contents(base_path('resources/lang/' . $lang . '/new-messages.php'), $str);
@@ -287,12 +292,13 @@ class LanguageController extends Controller
 
             if($translated_data_count > 0){
                 foreach ($translated_data as $key_1 => $data_1) {
-                    if($count > $items_processed){
+                    if($count >= $items_processed){
                         break;
                     }
                     $translated=  str_replace('_', ' ', Helpers::remove_invalid_charcaters($key_1));
                     if(strlen($translated) > 0){
                         $translated = Helpers::auto_translator($translated, 'en', $lang);
+                        usleep(250000); // 250ms between calls
                     }
                     $data_filtered_2[$key_1] = $translated;
                     unset($translated_data[$key_1]);
