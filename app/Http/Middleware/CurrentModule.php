@@ -38,7 +38,7 @@ class CurrentModule
             Config::set('module.current_module_id', null);
             Config::set('module.current_module_type', 'settings');
         }
-        if (Request::is('admin/users*')) {
+        if (Request::is('admin/users*') || Request::is('admin/diablero*')) {
             Config::set('module.current_module_id', null);
             Config::set('module.current_module_type', 'users');
         }

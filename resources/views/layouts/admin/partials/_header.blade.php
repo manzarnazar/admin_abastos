@@ -22,7 +22,7 @@
 
                     <li class="nav-item __nav-item">
                         <a href="{{ route('admin.users.dashboard')}}" id="tourb-6"
-                           class="__nav-link {{ Request::is('admin/users*') ? 'active' : '' }}">
+                           class="__nav-link {{ Request::is('admin/users*') || Request::is('admin/diablero*') ? 'active' : '' }}">
                             <img src="{{asset('/public/assets/admin/img/new-img/user.svg')}}" alt="public/img">
                             <span>{{ translate('Users')}}</span>
                         </a>

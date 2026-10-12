@@ -4442,6 +4442,8 @@ class Helpers
 
     public static function sendOrderDeliveryVerificationOtp($order)
     {
+        $response = null;
+
         if (self::getNotificationStatusData('customer', 'customer_delivery_verification_otp', 'sms_status')) {
             $published_status = 0;
             $payment_published_status = config('get_payment_publish_status');
@@ -4458,7 +4460,42 @@ class Helpers
             }
         }
 
-        return $response ?? null;
+        // Push is the active channel on Abastos (SMS OTP is often inactive).
+        // Keep this aligned with DeliverymanController::send_order_otp.
+        if (self::getNotificationStatusData('customer', 'customer_delivery_verification', 'push_notification_status')) {
+            try {
+                if ($order->is_guest == 0 && !$order->relationLoaded('customer')) {
+                    $order->load('customer');
+                } elseif ($order->is_guest == 1 && !$order->relationLoaded('guest')) {
+                    $order->load('guest');
+                }
+
+                $fcm_token = $order->is_guest == 0 ? $order?->customer?->cm_firebase_token : $order?->guest?->fcm_token;
+                if ($fcm_token && $order->otp) {
+                    $value = translate('your_order_is_ready_to_be_delivered,_plesae_share_your_otp_with_delivery_man.')
+                        .' '.translate('otp:').$order->otp.', '.translate('order_id:').$order->id;
+                    $data = [
+                        'title' => translate('messages.order_ready_to_be_delivered'),
+                        'description' => $value,
+                        'order_id' => $order->id,
+                        'image' => '',
+                        'type' => 'otp',
+                    ];
+                    self::send_push_notif_to_device($fcm_token, $data);
+                    DB::table('user_notifications')->insert([
+                        'data' => json_encode($data),
+                        'user_id' => $order->user_id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    $response = $response ?: 'success';
+                }
+            } catch (\Throwable $e) {
+                info('sendOrderDeliveryVerificationOtp push: '.$e->getMessage());
+            }
+        }
+
+        return $response;
     }
     public static function logoFullUrl(){
         $logo = self::getSettingsDataFromConfig('logo',['storage']);

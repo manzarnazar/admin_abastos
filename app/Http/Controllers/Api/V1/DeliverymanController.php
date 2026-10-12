@@ -504,26 +504,14 @@ class DeliverymanController extends Controller
                 ],
             ], 404);
         }
-        $value = translate('your_order_is_ready_to_be_delivered,_plesae_share_your_otp_with_delivery_man.').' '.translate('otp:').$order->otp.', '.translate('order_id:').$order->id;
         try {
-
-            $fcm_token = $order->is_guest == 0 ? $order?->customer?->cm_firebase_token : $order?->guest?->fcm_token;
-            if ($value && $fcm_token && Helpers::getNotificationStatusData('customer', 'customer_delivery_verification', 'push_notification_status')) {
-                $data = [
-                    'title' => translate('messages.order_ready_to_be_delivered'),
-                    'description' => $value,
-                    'order_id' => $order->id,
-                    'image' => '',
-                    'type' => 'otp',
-                ];
-
-                Helpers::send_push_notif_to_device($fcm_token, $data);
-                DB::table('user_notifications')->insert([
-                    'data' => json_encode($data),
-                    'user_id' => $order->user_id,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+            $sent = Helpers::sendOrderDeliveryVerificationOtp($order);
+            if (!$sent) {
+                return response()->json([
+                    'errors' => [
+                        ['code' => 'otp', 'message' => translate('messages.push_notification_faild')],
+                    ],
+                ], 403);
             }
         } catch (\Exception $e) {
             info($e->getMessage());
@@ -531,7 +519,7 @@ class DeliverymanController extends Controller
             return response()->json(['message' => translate('messages.push_notification_faild')], 403);
         }
 
-        return response()->json([], 200);
+        return response()->json(['message' => translate('messages.otp_sent_successfull')], 200);
     }
 
     public function update_order_status(Request $request)
