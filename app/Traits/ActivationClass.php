@@ -94,6 +94,11 @@ trait ActivationClass
             return true;
         }
 
+        // React storefront must stay available for abastos.app
+        if ($app === 'react_web') {
+            return true;
+        }
+
         $config = $this->getAddonsConfig();
         $cacheKey = $this->getSystemAddonCacheKey(app: $app);
 

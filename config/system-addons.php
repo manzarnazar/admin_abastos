@@ -46,7 +46,7 @@
   ),
   'react_web' => 
   array (
-    'active' => 0,
+    'active' => '1',
     'username' => 'nnmagency',
     'purchase_key' => '620511e5-74f0-48a6-b22e-d1e4bb5496e5',
     'software_id' => 'NDUzNzAzNTE=',
